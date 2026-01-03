@@ -1,0 +1,2 @@
+# Track Excel sample files with Git LFS
+example/*.xlsx filter=lfs diff=lfs merge=lfs -text

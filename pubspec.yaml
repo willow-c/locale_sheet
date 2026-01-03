@@ -1,0 +1,31 @@
+name: locale_sheet
+description: >
+  Excelスプレッドシートを単一の真実の情報源として扱い、ローカライズ文字列を複数形式（ARB等）に変換するDart CLIツール。
+version: 1.0.0
+repository: https://github.com/your-org/locale_sheet
+homepage: https://github.com/your-org/locale_sheet
+documentation: https://github.com/your-org/locale_sheet#readme
+issue_tracker: https://github.com/your-org/locale_sheet/issues
+publish_to: https://pub.dev
+topics:
+  - localization
+  - cli
+  - arb
+  - excel
+  - i18n
+executables:
+  locale_sheet:
+
+environment:
+  sdk: ">=3.10.4 <4.0.0"
+
+# Add regular dependencies here.
+dependencies:
+  path: ^1.9.0
+  args: ^2.5.0
+  excel: ^2.0.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
+  mocktail: ^0.3.0

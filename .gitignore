@@ -27,3 +27,24 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# FVM local SDK folder
+.fvm/
+
+# Coverage outputs
+coverage/
+coverage/lcov.info
+coverage/html/
+
+# Generated localization output
+*.arb
+lib/l10n/
+example/out/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
