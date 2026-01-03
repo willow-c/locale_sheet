@@ -13,7 +13,7 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
 
 ```yaml
 dependencies:
-  locale_sheet: ^1.0.0
+  locale_sheet: ^0.0.1
 ```
 
 2. パッケージを取得して実行（CLI）:
