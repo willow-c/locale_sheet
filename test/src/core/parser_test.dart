@@ -11,7 +11,7 @@ void main() {
     // Arrange: 不正なヘッダーでExcelファイル作成
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
-    sheet.appendRow(['not_key', 'en']);
+    sheet.appendRow([TextCellValue('not_key'), TextCellValue('en')]);
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_bad');
     final file = File('${tmp.path}/bad.xlsx')..writeAsBytesSync(bytes!);
@@ -28,7 +28,7 @@ void main() {
     // Arrange: ヘッダーのみのExcelファイル作成
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
-    sheet.appendRow(['key']);
+    sheet.appendRow([TextCellValue('key')]);
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_empty');
     final file = File('${tmp.path}/empty.xlsx')..writeAsBytesSync(bytes!);

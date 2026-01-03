@@ -11,8 +11,8 @@ void main() {
     // Arrange: XLSXバイト列を作成し一時ファイルに書き出し
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
-    sheet.appendRow(['key', 'en']);
-    sheet.appendRow(['hello', 'Hello']);
+    sheet.appendRow([TextCellValue('key'), TextCellValue('en')]);
+    sheet.appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
     final bytes = excel.encode()!;
 
     final tmp = Directory.systemTemp.createTempSync(

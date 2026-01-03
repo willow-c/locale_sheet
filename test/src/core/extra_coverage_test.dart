@@ -10,8 +10,8 @@ void main() {
   test('Parser treats null cell value as empty string -> translation null', () {
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
-    sheet.appendRow(['key', 'en']);
-    sheet.appendRow(['hello', null]);
+    sheet.appendRow([TextCellValue('key'), TextCellValue('en')]);
+    sheet.appendRow([TextCellValue('hello'), null]);
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_null_cell');
     final file = File('${tmp.path}/nullcell.xlsx')..writeAsBytesSync(bytes!);

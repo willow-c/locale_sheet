@@ -15,14 +15,22 @@ class ExcelParser {
     final sheetName = excel.tables.keys.first;
     final table = excel.tables[sheetName]!;
 
-    if (table.maxRows == 0) {
+    final rows = table.rows;
+    final maxRows = rows.length;
+    if (maxRows == 0) {
       return LocalizationSheet(locales: [], entries: []);
+    }
+
+    // Determine max columns from existing rows for robust handling across excel versions
+    var maxCols = 0;
+    for (final r in rows) {
+      if (r.length > maxCols) maxCols = r.length;
     }
 
     // Read header
     final header = <String>[];
-    for (var c = 0; c < table.maxCols; c++) {
-      final cell = table.rows[0].length > c ? table.rows[0][c] : null;
+    for (var c = 0; c < maxCols; c++) {
+      final cell = rows[0].length > c ? rows[0][c] : null;
       header.add(_cellToString(cell));
     }
 
@@ -33,8 +41,8 @@ class ExcelParser {
     final locales = header.skip(1).where((h) => h.trim().isNotEmpty).toList();
 
     final entries = <LocalizationEntry>[];
-    for (var r = 1; r < table.maxRows; r++) {
-      final row = table.rows[r];
+    for (var r = 1; r < maxRows; r++) {
+      final row = rows[r];
       if (row.isEmpty) continue;
       final keyCell = row.isNotEmpty ? row[0] : null;
       final key = _cellToString(keyCell).trim();
