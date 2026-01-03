@@ -3,25 +3,27 @@
 [![pub package](https://img.shields.io/pub/v/locale_sheet.svg)](https://pub.dev)
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
-locale_sheet は、Excel スプレッドシートを単一の真実の情報源（Single Source of Truth）として扱い、ローカライズ文字列を複数形式（現状: ARB）に変換する軽量な Dart CLI / ライブラリです。
+[README (English)](./README.md) | [README (日本語)](./README_ja.md)
+
+`locale_sheet` is a lightweight Dart CLI and library that treats an Excel spreadsheet as a single source of truth and converts localization strings into multiple output formats (currently: ARB).
 
 ## Quick Start
 
-1. 依存を追加（`pubspec.yaml`）:
+1. Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   locale_sheet: ^1.0.0
 ```
 
-2. パッケージを取得して実行（CLI）:
+2. Install dependencies and run the CLI:
 
 ```bash
 dart pub get
 dart run bin/locale_sheet.dart export --input path/to/translations.xlsx --format arb --out ./lib/l10n
 ```
 
-3. プログラム的に使う（最短）:
+3. Programmatic usage (minimal):
 
 ```dart
 import 'package:args/command_runner.dart';
@@ -37,34 +39,40 @@ void main() async {
 
 ## Features
 
-- Excel (.xlsx) をパースして内部モデルに変換
-- ARB 形式への出力（キーはアルファベット順にソート）
-- CLI とライブラリの両方で利用可能
+- Parses Excel (.xlsx) into an internal model
+- Exports to ARB format (keys are sorted alphabetically)
+- Available as both a CLI and a library
 
 ## Usage
 
-- CLI オプション:
-  - `--input` / `-i`: 入力 XLSX ファイルのパス（必須）
-  - `--format`: 出力形式（`arb`）
-  - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
+- CLI options:
+  - `--input` / `-i`: Path to the input XLSX file (required)
+  - `--format`: Output format (e.g. `arb`)
+  - `--out` / `-o`: Output directory (default: `.`)
 
-- 主な公開 API:
+- Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`
   - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser})`
-  - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
+  - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
 
 ## Examples
 
-サンプルは `example/` ディレクトリを参照してください（XLSX の最小フォーマット例と出力先のサンプルを含みます）。
+See the `example/` directory for sample XLSX files and example usage.
 
 ## Exit Codes & Error Handling
 
-- `64` — 引数エラー / UsageException
-- `1` — 実行時エラー（ファイル I/O やパースエラーなど）
+- `64` — argument error / UsageException
+- `1` — runtime error (file I/O, parsing errors, etc.)
 
 ## Testing & Coverage
 
-開発向けのテストは `dart test` で実行します。カバレッジの生成には付属スクリプトを利用してください:
+Run unit tests with:
+
+```bash
+dart test
+```
+
+Generate coverage using the bundled script:
 
 ```bash
 bash scripts/coverage.sh
@@ -72,9 +80,9 @@ bash scripts/coverage.sh
 
 ## Contributing
 
-- コードをフォーマット: `dart format .`
-- テストを追加/修正: `dart test`
-- カバレッジの更新: `bash scripts/coverage.sh`
+- Format code: `dart format .`
+- Add/update tests: `dart test`
+- Update coverage: `bash scripts/coverage.sh`
 
 ## License
 
