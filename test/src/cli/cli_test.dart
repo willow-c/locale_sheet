@@ -12,123 +12,74 @@ class TestLogger implements Logger {
 
   @override
   void error(String message) => errors.add(message);
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
-  /// argResultsがnullの場合にエラー終了することを検証（CLIの堅牢性）
-  /// Arrange-Act-Assertパターン
-  test('run() handles argResults == null gracefully', () async {
-    // Arrange
-    final logger = TestLogger();
-    final cmd = ExportCommand(logger: logger, converter: (i, o) async {});
-    // Act
-    // argResultsをnullにするために直接run()を呼ぶ
-    // 通常はCommandRunner経由だが、テスト用に直接run()を呼ぶことでnullを再現
-    // ignore: invalid_use_of_protected_member
-    final result = await cmd.run();
-    // Assert
-    expect(result, 64);
-    expect(logger.errors, contains(contains('argResults が null')));
-  });
+  group('ExportCommand', () {
+    late TestLogger logger;
+    late CommandRunner<int> runner;
 
-  /// converterが例外を投げた場合にエラー終了し、エラーログが出力されることを検証
-  /// Arrange-Act-Assertパターン
-  test('converter throws: returns 1 and logs error', () async {
-    // Arrange
-    final logger = TestLogger();
-    final cmd = ExportCommand(
-      logger: logger,
-      converter: (i, o) async => throw Exception('fail!'),
-    );
-    final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
-    // Act
-    final res = await runner.run(['export', '--input', 'in.xlsx']);
-    // Assert
-    expect(res, 1);
-    expect(logger.errors, isNotEmpty);
-    expect(logger.errors.first, contains('処理に失敗'));
-  });
+    setUp(() {
+      logger = TestLogger();
+      final cmd = ExportCommand(logger: logger);
+      runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
+    });
 
-  /// 入力ファイル未指定時にエラー終了し、エラーメッセージが出力されることを検証
-  /// Arrange-Act-Assertパターン
-  test('missing input returns 64 and writes stderr (Japanese)', () async {
-    // Arrange
-    final logger = TestLogger();
-    final cmd = ExportCommand(logger: logger, converter: (i, o) async {});
-    final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
-    // Act
-    final res = await runner.run(['export']);
-    // Assert
-    expect(res, 64);
-    expect(logger.errors, contains(contains('入力ファイル')));
-  });
-
-  /// サポート外のformat指定時にエラー終了し、エラーメッセージが出力されることを検証
-  /// Arrange-Act-Assertパターン
-  test('unsupported format returns 64 (Japanese)', () async {
-    // Arrange
-    final logger = TestLogger();
-    final cmd = ExportCommand(logger: logger, converter: (i, o) async {});
-    final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
-    // Act
-    final res = await runner.run([
-      'export',
-      '--input',
-      'in.xlsx',
-      '--format',
-      'resx',
-    ]);
-    // Assert
-    expect(res, 64);
-    expect(logger.errors, contains(contains('サポートされていない')));
-  });
-
-  /// 正常系：converterが呼ばれ、0で正常終了し、infoログが出力されることを検証
-  /// Arrange-Act-Assertパターン
-  test(
-    'successful conversion calls converter and returns 0 (Japanese)',
-    () async {
+    test('run() handles argResults == null gracefully', () async {
       // Arrange
-      final logger = TestLogger();
-      String? calledIn;
-      String? calledOut;
-      final cmd = ExportCommand(
-        logger: logger,
-        converter: (i, o) async {
-          calledIn = i;
-          calledOut = o;
-        },
-      );
-      final runner = CommandRunner<int>('locale_sheet', 'test')
-        ..addCommand(cmd);
+      final cmd = ExportCommand(logger: logger);
       // Act
-      final res = await runner.run([
-        'export',
-        '--input',
-        'in.xlsx',
-        '--out',
-        'outdir',
-      ]);
+      // Directly call run() to simulate null argResults, which is a scenario
+      // the command should be resilient against.
+      // ignore: invalid_use_of_protected_member
+      final result = await cmd.run();
       // Assert
-      expect(res, 0);
-      expect(calledIn, 'in.xlsx');
-      expect(calledOut, 'outdir');
-      expect(logger.infos, contains('ARB ファイルを outdir に出力しました'));
-    },
-  );
+      expect(result, 64);
+      expect(logger.errors.first, contains('引数の解析に失敗しました'));
+    });
 
-  test('converter throws: returns 1 and logs error', () async {
-    final logger = TestLogger();
-    final cmd = ExportCommand(
-      logger: logger,
-      converter: (i, o) async => throw Exception('fail!'),
-    );
-    final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
-    final res = await runner.run(['export', '--input', 'in.xlsx']);
-    expect(res, 1);
-    expect(logger.errors, isNotEmpty);
-    expect(logger.errors.first, contains('処理に失敗'));
+    test('missing --input throws ArgumentError', () async {
+      // Act & Assert
+      try {
+        await runner.run(['export']);
+        fail('should have thrown ArgumentError');
+      } on ArgumentError catch (e) {
+        expect(e.message, 'Option input is mandatory.');
+      }
+    });
+
+    test('unsupported format throws UsageException', () async {
+      // Act & Assert
+      try {
+        await runner.run([
+          'export',
+          '--input',
+          'dummy.xlsx',
+          '--format',
+          'unsupported',
+        ]);
+        fail('should have thrown UsageException');
+      } on UsageException catch (e) {
+        expect(
+          e.message,
+          contains(
+            '"unsupported" is not an allowed value for option "--format".',
+          ),
+        );
+      }
+    });
+
+    test('non-existent input file returns 1 and logs error', () async {
+      // Arrange
+      const nonExistentFile = 'path/to/non_existent_file.xlsx';
+
+      // Act
+      final result = await runner.run(['export', '--input', nonExistentFile]);
+
+      // Assert
+      expect(result, 1);
+      expect(logger.errors, isNotEmpty);
+      expect(logger.errors.first, contains('エラーが発生しました'));
+    });
   });
 }

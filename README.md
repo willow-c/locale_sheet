@@ -43,8 +43,6 @@ brew install lcov
 - `scripts/` — カバレッジ・クリーン用スクリプト（Bash/PowerShell両対応）
 - `AGENTS.md` — エージェント/自動化運用方針・履歴
 
-> ※ `lib/src/exporter.dart` など旧ファイルは不要です。exporters/配下に統合済みのため削除してください。
-
 ## Excel フォーマット仕様
 
 - 1行目はヘッダ行です。
@@ -86,6 +84,48 @@ CLI のヘルプは日本語化されており、`export --help` で詳細が確
 
 出力例: `./lib/l10n/app_en.arb`, `./lib/l10n/app_ja.arb`
 
+ExportCommand の注入とテスト方法
+---------------------------------
+
+`ExportCommand` はテストやカスタム処理のために内部依存を注入できるようになっています。主に以下をコンストラクタで差し替え可能です。
+
+- `logger`: `Logger` 実装を渡してログ出力をカスタマイズできます（デフォルトは `SimpleLogger`）。
+- `parser`: `ExcelParser` を差し替えて独自のパーサやフェイクパーサを使用できます（ユニットテストで便利）。
+- `exporters`: `LocalizationExporter` のマップを渡して、サポートする出力フォーマットを追加・差し替えできます。
+
+簡単な注入例（テスト用）:
+
+```dart
+import 'dart:io';
+import 'package:args/command_runner.dart';
+import 'package:locale_sheet/src/cli/cli.dart';
+import 'package:locale_sheet/src/cli/logger.dart';
+
+final fakeParser = /* ExcelParser のサブクラスで fake 実装 */;
+final fakeExporter = /* LocalizationExporter のフェイク */;
+
+final cmd = ExportCommand(
+  logger: SimpleLogger(),
+  parser: fakeParser,
+  exporters: {'arb': fakeExporter},
+);
+
+final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
+await runner.run(['export', '--input', 'path/to/file.xlsx']);
+```
+
+この注入設計により、ファイル I/O や実際のエクスポート処理をモックして `ExportCommand` の振る舞いのみを検証できます。
+
+### エラーハンドリング
+
+このツールは、一般的なエラー状況を検知し、わかりやすいメッセージを出力します。
+
+- **不正な引数:** `--input` が指定されない場合や、`--format` にサポートされていない形式が渡された場合、コマンドはエラーメッセージと共に終了します。
+- **ファイルI/Oエラー:** 入力ファイルが存在しない場合や、出力ディレクトリに書き込めない場合など、ファイルシステムに関する問題が発生するとエラーが報告されます。
+- **パースエラー:** Excel ファイルが破損している、または期待されるフォーマット（1行目がヘッダーなど）でない場合、パース処理中にエラーが発生します。
+
+問題が発生した場合は、CLIに出力されるエラーメッセージを確認してください。
+
 ## サンプル実行
 ```bash
 fvm dart run bin/locale_sheet.dart export --input example/sample.xlsx --format arb --out ./lib/l10n
@@ -102,6 +142,43 @@ await convertExcelToArb(inputPath: 'path/to/translations.xlsx', outDir: 'lib/l10
 ```
 
 テストしやすさのため、バイト列を受け取る `convertExcelBytesToArb` と、エクスポーターを注入できる設計になっています。
+
+また、より柔軟な使い方として、バイト列を直接扱う `convertExcelBytesToArb` 関数も利用できます。これにより、ファイルシステムからではなく、ネットワークやメモリ上のデータから直接変換処理を行うことができます。
+
+```dart
+import 'dart:typed_data';
+import 'package:locale_sheet/locale_sheet.dart';
+
+// 例: Uint8List のバイトデータを取得する何らかの処理
+// Uint8List excelBytes = await getExcelBytesFromSomewhere();
+
+// ArbExporter のインスタンスを作成
+final arbExporter = ArbExporter();
+
+// バイトデータとエクスポーターを指定して変換を実行
+// await convertExcelBytesToArb(excelBytes, arbExporter, 'lib/l10n');
+```
+この方法は、テストコードを書く際や、カスタムのデータソースから変換する場合に特に便利です。
+
+プログラムから CLI コマンドを直接利用する
+---------------------------------
+
+`ExportCommand` は公開 API としてエクスポートされているため、`CommandRunner` に登録してプログラム内部から実行できます。これは CLI と同じ挙動をライブラリ経由で呼び出したい場合に便利です。
+
+```dart
+import 'package:args/command_runner.dart';
+import 'package:locale_sheet/locale_sheet.dart';
+
+void main() async {
+  final runner = CommandRunner<int>('locale_sheet', 'programmatic runner')
+    ..addCommand(ExportCommand());
+
+  // コマンドラインと同じ引数で実行可能
+  await runner.run(['export', '--input', 'path/to/file.xlsx', '--out', './lib/l10n']);
+}
+```
+
+また、`ExportCommand` のコンストラクタは `logger`, `parser`, `exporters` を注入できるため、ユニットテストやカスタム処理の差し替えが容易です。
 
 
 ## テストとカバレッジ・自動化方針
@@ -191,6 +268,89 @@ CI等では `coverage/lcov.info` を利用してください。
 
 - `lib/src/exporters/` に新しいエクスポーター（例: `resx_exporter.dart`, `json_exporter.dart`）を追加できます。
 - モデルとパーサを拡張すれば、プレースホルダや複数形、説明の取り込みが可能です。
+
+### 新しいエクスポーターの追加
+
+このツールは `arb` 形式以外にも、JSON や iOS の `.strings` などの形式に対応できるよう拡張可能です。新しい出力形式を追加する手順は以下の通りです。
+
+#### 1. Exporter クラスの作成
+
+まず、 `lib/src/exporters/` ディレクトリに新しい Dart ファイルを作成します。ファイル名は `json_exporter.dart` のように、`_exporter.dart` で終わるようにします。
+
+そのファイルで `LocalizationExporter` インターフェースを実装したクラスを作成します。このインターフェースは `export` メソッドを一つだけ持ちます。
+
+`export` メソッドは、パースされた `LocalizationSheet` データと出力先ディレクトリ `outDir` を受け取ります。このメソッド内で、各ロケールに対応するファイル（例: `en.json`, `ja.json`）を生成するロジックを実装します。
+
+**`lib/src/exporters/json_exporter.dart` の実装例:**
+
+```dart
+import 'dart:convert';
+import 'dart:io';
+
+import '../core/model.dart';
+import 'exporter.dart';
+
+/// JSON 形式でローカライズ情報をエクスポートするクラス
+class JsonExporter implements LocalizationExporter {
+  @override
+  Future<void> export(LocalizationSheet sheet, String outDir) async {
+    final dir = Directory(outDir);
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+
+    for (final locale in sheet.locales) {
+      final Map<String, String> translations = {};
+      for (final entry in sheet.entries) {
+        final value = entry.translations[locale];
+        if (value != null) {
+          translations[entry.key] = value;
+        }
+      }
+
+      // ファイルに出力
+      final fileName = '$locale.json';
+      final file = File('${dir.path}/$fileName');
+      final encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(translations));
+    }
+  }
+}
+```
+
+#### 2. CLI への登録
+
+次に、作成した Exporter を CLI から利用できるように登録します。
+
+`lib/src/cli/cli.dart` ファイルを開き、`ExportCommand` クラス内にある `_exporters` マップに新しいエントリーを追加します。キーには `--format` オプションで指定する名前（例: `json`）、値には作成した Exporter のインスタンスを指定します。
+
+```dart
+// lib/src/cli/cli.dart
+
+// ... (他の import)
+// import 'package:locale_sheet/src/exporters/json_exporter.dart'; // 作成した Exporter をインポート
+
+class ExportCommand extends Command<int> {
+  // ...
+
+  final Map<String, LocalizationExporter> _exporters = {
+    'arb': ArbExporter(),
+    // 'json': JsonExporter(), // ここに追加
+  };
+
+  // ...
+}
+```
+*注: 上記のコードは説明のための例です。実際に`json_exporter.dart`ファイルを作成し、インポート行のコメントを解除して`_exporters`マップに追加する必要があります。*
+
+#### 3. 動作確認
+
+これで、CLI から新しいフォーマットを指定できるようになります。
+
+```bash
+# JSON 形式でエクスポート
+fvm dart run bin/locale_sheet.dart export --input example/sample.xlsx --format json --out ./lib/l10n
+```
 
 ## ライセンス
 

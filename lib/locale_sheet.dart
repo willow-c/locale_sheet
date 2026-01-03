@@ -4,6 +4,7 @@ export 'src/core/model.dart';
 export 'src/core/parser.dart';
 export 'src/exporters/exporter.dart';
 export 'src/exporters/arb_exporter.dart';
+export 'src/cli/cli.dart';
 
 import 'dart:io' as io;
 import 'dart:typed_data';

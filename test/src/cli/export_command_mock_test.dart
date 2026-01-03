@@ -1,12 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:args/command_runner.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:locale_sheet/src/cli/cli.dart';
+import 'package:locale_sheet/locale_sheet.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
 import 'package:test/test.dart';
 
-class MockConverter extends Mock {
-  Future<void> call(String inputPath, String outDir);
-}
+class MockExporter extends Mock implements LocalizationExporter {}
 
 class TestLogger implements Logger {
   final infos = <String>[];
@@ -17,35 +18,55 @@ class TestLogger implements Logger {
 
   @override
   void error(String message) => errors.add(message);
+}
+
+class FakeParser extends ExcelParser {
+  final LocalizationSheet sheet;
+  FakeParser(this.sheet);
+
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  LocalizationSheet parse(Uint8List bytes) => sheet;
 }
 
 void main() {
   setUpAll(() {
-    registerFallbackValue('');
+    registerFallbackValue(LocalizationSheet(locales: [], entries: []));
   });
 
-  test('ExportCommand calls injected converter', () async {
-    // Arrange
-    final mockConv = MockConverter();
-    when(() => mockConv.call(any(), any())).thenAnswer((_) async {});
+  test('ExportCommand calls injected exporter (mocktail)', () async {
     final logger = TestLogger();
-    final cmd = ExportCommand(logger: logger, converter: mockConv.call);
+
+    final sheet = LocalizationSheet(
+      locales: ['en'],
+      entries: [
+        LocalizationEntry('k', {'en': 'v'}),
+      ],
+    );
+    final parser = FakeParser(sheet);
+
+    final mockExporter = MockExporter();
+    when(() => mockExporter.export(any(), any())).thenAnswer((_) async {});
+
+    final cmd = ExportCommand(
+      logger: logger,
+      parser: parser,
+      exporters: {'arb': mockExporter},
+    );
     final runner = CommandRunner<int>('locale_sheet', 'test')..addCommand(cmd);
 
-    // Act
+    final tmp = File('test/tmp_mocktail.xlsx');
+    await tmp.writeAsBytes([0]);
     final res = await runner.run([
       'export',
       '--input',
-      'in.xlsx',
+      tmp.path,
       '--out',
       'outdir',
     ]);
+    await tmp.delete();
 
-    // Assert
     expect(res, 0);
-    expect(logger.infos, contains('ARB ファイルを outdir に出力しました'));
-    verify(() => mockConv.call('in.xlsx', 'outdir')).called(1);
+    verify(() => mockExporter.export(any(), 'outdir')).called(1);
+    expect(logger.infos, isNotEmpty);
   });
 }
