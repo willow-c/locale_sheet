@@ -7,7 +7,6 @@ repository: https://github.com/willow-c/locale_sheet
 homepage: https://github.com/willow-c/locale_sheet
 documentation: https://github.com/willow-c/locale_sheet#readme
 issue_tracker: https://github.com/willow-c/locale_sheet/issues
-publish_to: https://pub.dev
 topics:
   - localization
   - cli
