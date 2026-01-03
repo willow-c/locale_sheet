@@ -2,10 +2,10 @@ name: locale_sheet
 description: >
   Excelスプレッドシートを単一の真実の情報源として扱い、ローカライズ文字列を複数形式（ARB等）に変換するDart CLIツール。
 version: 1.0.0
-repository: https://github.com/your-org/locale_sheet
-homepage: https://github.com/your-org/locale_sheet
-documentation: https://github.com/your-org/locale_sheet#readme
-issue_tracker: https://github.com/your-org/locale_sheet/issues
+repository: https://github.com/willow-c/locale_sheet
+homepage: https://github.com/willow-c/locale_sheet
+documentation: https://github.com/willow-c/locale_sheet#readme
+issue_tracker: https://github.com/willow-c/locale_sheet/issues
 publish_to: https://pub.dev
 topics:
   - localization
