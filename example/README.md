@@ -1,20 +1,19 @@
-# サンプルExcelファイルの説明
+# Sample Excel file
 
-このファイルは、locale_sheetパッケージの動作確認やテスト用のサンプルデータです。
+[README (English)](./README.md) | [README (日本語)](./README_ja.md)
 
-- `sample.csv` ... Excelで開いて編集・保存できるシンプルなCSV例（key, en, ja列）
-- 実際の運用ではExcel形式（.xlsx）を推奨しますが、CSVでも構造は同じです
+This file contains sample data used for testing and verifying the behavior of the `locale_sheet` package.
 
-## サンプル内容
+- `sample.xlsx` — a simple example (columns: `key`, `en`, `ja`) that can be opened and edited with Excel.
+
+## Contents
 
 | key   | en     | ja         |
 |-------|--------|------------|
 | hello | Hello  | こんにちは |
 | bye   | Goodbye| さようなら |
 
-## 使い方例
+## Usage
 
-1. Excelでsample.csvを開き、必要に応じて編集・保存
-2. `locale_sheet` CLIやAPIで `--input example/sample.xlsx` などとして利用
-
-> Excel形式（.xlsx）で保存したファイルも同じ構造で利用できます。
+1. Open `sample.xlsx` in Excel and edit/save as needed.
+2. Use the `locale_sheet` CLI or API with `--input example/sample.xlsx` (or equivalent) to convert the file.
