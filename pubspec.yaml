@@ -1,7 +1,7 @@
 name: locale_sheet
 description: >
   `locale_sheet` is a lightweight Dart CLI and library that treats an Excel spreadsheet as a single source of truth and converts localization strings into multiple output formats (currently: ARB).
-version: 0.1.0
+version: 0.1.1
 license: MIT
 repository: https://github.com/willow-c/locale_sheet
 homepage: https://github.com/willow-c/locale_sheet

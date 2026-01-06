@@ -1,3 +1,7 @@
+## 0.1.1 - 2026-01-06
+
+- Fixed: Quick Start in `README.md` / `README_ja.md` — dependency example updated to `locale_sheet: ^0.1.1` (previously `^0.0.2`).
+
 ## 0.1.0 - 2026-01-06
 
 - Added CLI option `--default-locale` (`-d`) to specify a fallback locale when translations are missing.
