@@ -13,7 +13,7 @@
 
 ```yaml
 dev_dependencies:
-  locale_sheet: ^0.0.1
+  locale_sheet: ^0.0.2
 ```
 
 2. Install dependencies and run the CLI:
