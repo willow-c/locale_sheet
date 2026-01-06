@@ -10,13 +10,17 @@ import 'logger.dart';
 /// 使い方（コマンドライン）:
 ///
 /// ```sh
-/// locale_sheet export --input path/to/file.xlsx --format arb --out ./lib/l10n
+/// locale_sheet export --input path/to/file.xlsx --format arb --out ./lib/l10n [--default-locale en]
 /// ```
+///
+/// `--default-locale` を指定すると、翻訳が存在しない場合に指定ロケールからフォールバックします。
+/// 指定しない場合は `en` が存在すればそれをデフォルトとして使い、`en` が無ければ最初のロケール列をデフォルトにします。
 ///
 /// コンストラクタ引数:
 /// - `logger`: ログ出力先を差し替えるための `Logger` 実装。未指定時は `SimpleLogger` を使います。
 /// - `parser`: テストやカスタム解析のために `ExcelParser` を注入できます。未指定時はデフォルトの `ExcelParser()` を使います。
 /// - `exporters`: 出力フォーマットを提供する `LocalizationExporter` のマップ。キーが `--format` に指定する値になります。
+/// - `--default-locale`: CLI オプション。存在しないロケールを指定した場合はエラーになります。未指定時は `en` または最初のロケール列をデフォルトとして使用します。
 ///
 /// 注入可能にすることでユニットテスト時にパーサやエクスポーターを差し替えられます。
 class ExportCommand extends Command<int> {
@@ -53,6 +57,12 @@ class ExportCommand extends Command<int> {
       allowed: _exporters.keys.toList(),
     );
     argParser.addOption('out', abbr: 'o', defaultsTo: '.', help: '出力ディレクトリ。');
+    argParser.addOption(
+      'default-locale',
+      abbr: 'd',
+      help:
+          'Default locale to fall back to when translations are missing. If omitted, uses "en" if present or the first locale column.',
+    );
   }
 
   @override
@@ -76,7 +86,28 @@ class ExportCommand extends Command<int> {
     try {
       final bytes = await File(inputPath).readAsBytes();
       final sheet = parser.parse(bytes);
-      await exporter.export(sheet, outDir);
+      final bool userProvidedDefault = argResults.wasParsed('default-locale');
+      String defaultLocale;
+      if (userProvidedDefault) {
+        final requested = argResults['default-locale'] as String?;
+        if (requested == null || !sheet.locales.contains(requested)) {
+          logger.error(
+            'Specified default-locale "${requested ?? ''}" not found in the sheet locales: ${sheet.locales}',
+          );
+          return 64;
+        }
+        defaultLocale = requested;
+      } else {
+        if (sheet.locales.contains('en')) {
+          defaultLocale = 'en';
+        } else if (sheet.locales.isNotEmpty) {
+          defaultLocale = sheet.locales.first;
+        } else {
+          defaultLocale = 'en';
+        }
+      }
+
+      await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
       logger.info('"$format" 形式のファイルを $outDir に正常に出力しました。');
       return 0;
     } catch (e) {

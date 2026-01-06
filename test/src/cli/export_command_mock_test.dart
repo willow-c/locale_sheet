@@ -45,7 +45,13 @@ void main() {
     final parser = FakeParser(sheet);
 
     final mockExporter = MockExporter();
-    when(() => mockExporter.export(any(), any())).thenAnswer((_) async {});
+    when(
+      () => mockExporter.export(
+        any(),
+        any(),
+        defaultLocale: any(named: 'defaultLocale'),
+      ),
+    ).thenAnswer((_) async {});
 
     final cmd = ExportCommand(
       logger: logger,
@@ -66,7 +72,13 @@ void main() {
     await tmp.delete();
 
     expect(res, 0);
-    verify(() => mockExporter.export(any(), 'outdir')).called(1);
+    verify(
+      () => mockExporter.export(
+        any(),
+        'outdir',
+        defaultLocale: any(named: 'defaultLocale'),
+      ),
+    ).called(1);
     expect(logger.infos, isNotEmpty);
   });
 }

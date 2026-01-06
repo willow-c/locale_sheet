@@ -7,23 +7,32 @@ import 'exporter.dart';
 /// ARB エクスポーターの実装。
 class ArbExporter implements LocalizationExporter {
   @override
-  Future<void> export(LocalizationSheet sheet, String outDir) async {
+  Future<void> export(
+    LocalizationSheet sheet,
+    String outDir, {
+    String? defaultLocale,
+  }) async {
     final dir = Directory(outDir);
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
-
+    // For each target locale, build ARB content. If a translation is missing
+    // and `defaultLocale` is provided, fall back to the default locale's
+    // translation when available.
     for (final locale in sheet.locales) {
       final Map<String, dynamic> arb = {};
       for (final entry in sheet.entries) {
-        final value = entry.translations[locale];
+        var value = entry.translations[locale];
+        if (value == null && defaultLocale != null) {
+          value = entry.translations[defaultLocale];
+        }
         if (value != null) {
           arb[entry.key] = value;
         }
       }
       arb['@@locale'] = locale;
 
-      // 出力を安定化するためにキーをソートします。'@@locale' は末尾に配置します。
+      // Sort keys for stable output; keep @@locale at the end.
       final keys = arb.keys.where((k) => k != '@@locale').toList()..sort();
       final sorted = <String, dynamic>{};
       for (final k in keys) {
