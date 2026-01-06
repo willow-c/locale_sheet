@@ -22,10 +22,11 @@ Future<void> convertExcelBytesToArb(
   LocalizationExporter exporter,
   String outDir, {
   ExcelParser? parser,
+  String defaultLocale = 'en',
 }) async {
   final usedParser = parser ?? ExcelParser();
   final sheet = usedParser.parse(bytes);
-  await exporter.export(sheet, outDir);
+  await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
 }
 
 /// ファイルパスを読み込み、別のエクスポーターが渡されない限り
@@ -35,8 +36,15 @@ Future<void> convertExcelToArb({
   required String outDir,
   ExcelParser? parser,
   LocalizationExporter? exporter,
+  String defaultLocale = 'en',
 }) async {
   final bytes = await io.File(inputPath).readAsBytes();
   final usedExporter = exporter ?? ArbExporter();
-  await convertExcelBytesToArb(bytes, usedExporter, outDir, parser: parser);
+  await convertExcelBytesToArb(
+    bytes,
+    usedExporter,
+    outDir,
+    parser: parser,
+    defaultLocale: defaultLocale,
+  );
 }

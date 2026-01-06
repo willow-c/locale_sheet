@@ -20,8 +20,12 @@ dev_dependencies:
 
 ```bash
 dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
 ```
+
+補足:
+- `--default-locale` オプション（短縮 `-d`）は、翻訳が欠けている場合にフォールバックするロケールを指定します。
+- `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
 
 3. プログラム的に使う（最短）:
 
@@ -33,7 +37,16 @@ void main() async {
   final runner = CommandRunner<int>('locale_sheet', 'programmatic runner')
     ..addCommand(ExportCommand());
 
-  await runner.run(['export', '--input', 'path/to/file.xlsx', '--out', './lib/l10n']);
+  // Programmatic 実行（default-locale 指定例）:
+  await runner.run([
+    'export',
+    '--input',
+    'path/to/file.xlsx',
+    '--out',
+    './lib/l10n',
+    '--default-locale',
+    'en',
+  ]);
 }
 ```
 

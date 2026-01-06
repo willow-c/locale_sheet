@@ -20,8 +20,12 @@ dev_dependencies:
 
 ```bash
 dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
 ```
+
+Notes:
+- The `--default-locale` option (short `-d`) specifies a fallback locale to use when a translation is missing.
+- If `--default-locale` is omitted, the CLI will use `en` if present in the sheet; otherwise it uses the first locale column.
 
 3. Programmatic usage (minimal):
 
@@ -33,7 +37,16 @@ void main() async {
   final runner = CommandRunner<int>('locale_sheet', 'programmatic runner')
     ..addCommand(ExportCommand());
 
-  await runner.run(['export', '--input', 'path/to/file.xlsx', '--out', './lib/l10n']);
+  // Programmatic invocation (with default-locale):
+  await runner.run([
+    'export',
+    '--input',
+    'path/to/file.xlsx',
+    '--out',
+    './lib/l10n',
+    '--default-locale',
+    'en',
+  ]);
 }
 ```
 
