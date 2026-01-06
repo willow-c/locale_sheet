@@ -1,6 +1,6 @@
 # locale_sheet
 
-[![pub package](https://img.shields.io/pub/v/locale_sheet.svg)](https://pub.dev)
+[![pub package](https://img.shields.io/pub/v/locale_sheet.svg)](https://pub.dev/packages/locale_sheet)
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 [README (English)](./README.md) | [README (日本語)](./README_ja.md)
@@ -12,7 +12,7 @@
 1. Add the dependency to your `pubspec.yaml`:
 
 ```yaml
-dependencies:
+dev_dependencies:
   locale_sheet: ^0.0.1
 ```
 
@@ -20,7 +20,7 @@ dependencies:
 
 ```bash
 dart pub get
-dart run bin/locale_sheet.dart export --input path/to/translations.xlsx --format arb --out ./lib/l10n
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n
 ```
 
 3. Programmatic usage (minimal):
