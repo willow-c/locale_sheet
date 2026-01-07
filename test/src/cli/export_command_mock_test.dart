@@ -21,8 +21,8 @@ class TestLogger implements Logger {
 }
 
 class FakeParser extends ExcelParser {
-  FakeParser(this.sheet);
   final LocalizationSheet sheet;
+  FakeParser(this.sheet);
 
   @override
   LocalizationSheet parse(Uint8List bytes) => sheet;
