@@ -2,41 +2,15 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import '../../locale_sheet.dart';
-import 'logger.dart';
+import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/logger.dart';
 
 /// ローカライズファイルをエクスポートするための CLI コマンド。
-///
-/// 使い方（コマンドライン）:
-///
-/// ```sh
-/// locale_sheet export --input path/to/file.xlsx --format arb --out ./lib/l10n [--default-locale en]
-/// ```
-///
-/// `--default-locale` を指定すると、翻訳が存在しない場合に指定ロケールからフォールバックします。
-/// 指定しない場合は `en` が存在すればそれをデフォルトとして使い、`en` が無ければ最初のロケール列をデフォルトにします。
-///
-/// コンストラクタ引数:
-/// - `logger`: ログ出力先を差し替えるための `Logger` 実装。未指定時は `SimpleLogger` を使います。
-/// - `parser`: テストやカスタム解析のために `ExcelParser` を注入できます。未指定時はデフォルトの `ExcelParser()` を使います。
-/// - `exporters`: 出力フォーマットを提供する `LocalizationExporter` のマップ。キーが `--format` に指定する値になります。
-/// - `--default-locale`: CLI オプション。存在しないロケールを指定した場合はエラーになります。未指定時は `en` または最初のロケール列をデフォルトとして使用します。
-///
 /// 注入可能にすることでユニットテスト時にパーサやエクスポーターを差し替えられます。
 class ExportCommand extends Command<int> {
-  @override
-  final name = 'export';
-
-  @override
-  final description = 'ローカライズ用のExcelシートを指定された形式に変換します。';
-
-  final Logger logger;
-  final ExcelParser parser;
-
-  // 利用可能なエクスポーターのマップ。
-  // 新しいフォーマットを追加するには、ここに新しいエントリーを追加します。
-  final Map<String, LocalizationExporter> _exporters;
-
+  /// Create a new `ExportCommand`.
+  ///
+  /// Optional dependencies can be injected for testing.
   ExportCommand({
     Logger? logger,
     ExcelParser? parser,
@@ -44,27 +18,50 @@ class ExportCommand extends Command<int> {
   }) : logger = logger ?? SimpleLogger(),
        parser = parser ?? ExcelParser(),
        _exporters = exporters ?? {'arb': ArbExporter()} {
-    argParser.addOption(
-      'input',
-      abbr: 'i',
-      help: '入力 .xlsx ファイルのパス。',
-      mandatory: true,
-    );
-    argParser.addOption(
-      'format',
-      defaultsTo: 'arb',
-      help: '出力フォーマット。',
-      allowed: _exporters.keys.toList(),
-    );
-    argParser.addOption('out', abbr: 'o', defaultsTo: '.', help: '出力ディレクトリ。');
-    argParser.addOption(
-      'default-locale',
-      abbr: 'd',
-      help:
-          'Default locale to fall back to when translations are missing. If omitted, uses "en" if present or the first locale column.',
-    );
+    final allowedFormats = _exporters.keys.toList();
+
+    argParser
+      ..addOption(
+        'input',
+        abbr: 'i',
+        help: '入力 .xlsx ファイルのパス。',
+        mandatory: true,
+      )
+      ..addOption(
+        'format',
+        defaultsTo: 'arb',
+        help: '出力フォーマット。',
+        allowed: allowedFormats,
+      )
+      ..addOption('out', abbr: 'o', defaultsTo: '.', help: '出力ディレクトリ。')
+      ..addOption(
+        'default-locale',
+        abbr: 'd',
+        help:
+            'Default locale to be used as the default language. '
+            'If omitted, uses "en" if present or the first locale column.',
+      );
   }
 
+  /// The command name used by the `CommandRunner`.
+  @override
+  final name = 'export';
+
+  /// Short description shown in help text.
+  @override
+  final description = 'ローカライズ用のExcelシートを指定された形式に変換します。';
+
+  /// Logger used to emit messages; injectable for tests.
+  final Logger logger;
+
+  /// Parser used to read Excel bytes into internal sheet model.
+  final ExcelParser parser;
+
+  // 利用可能なエクスポーターのマップ。
+  // 新しいフォーマットを追加するには、ここに新しいエントリーを追加します。
+  final Map<String, LocalizationExporter> _exporters;
+
+  /// Execute the export command.
   @override
   Future<int> run() async {
     final argResults = this.argResults;
@@ -86,14 +83,16 @@ class ExportCommand extends Command<int> {
     try {
       final bytes = await File(inputPath).readAsBytes();
       final sheet = parser.parse(bytes);
-      final bool userProvidedDefault = argResults.wasParsed('default-locale');
+      final userProvidedDefault = argResults.wasParsed('default-locale');
       String defaultLocale;
       if (userProvidedDefault) {
         final requested = argResults['default-locale'] as String?;
         if (requested == null || !sheet.locales.contains(requested)) {
-          logger.error(
-            'Specified default-locale "${requested ?? ''}" not found in the sheet locales: ${sheet.locales}',
-          );
+          final localesList = sheet.locales.join(', ');
+          final message =
+              'Specified default-locale "${requested ?? ''}" not found '
+              'in the sheet locales: $localesList';
+          logger.error(message);
           return 64;
         }
         defaultLocale = requested;
@@ -110,7 +109,7 @@ class ExportCommand extends Command<int> {
       await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
       logger.info('"$format" 形式のファイルを $outDir に正常に出力しました。');
       return 0;
-    } catch (e) {
+    } on Exception catch (e) {
       logger.error('エラーが発生しました: $e');
       return 1;
     }

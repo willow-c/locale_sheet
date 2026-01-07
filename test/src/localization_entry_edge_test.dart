@@ -31,9 +31,9 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationEntry equality and hashCode edge', () {
     // Arrange & Act & Assert
-    final a = LocalizationEntry('k', {'en': 'v'});
-    final b = LocalizationEntry('k', {'en': 'v'});
-    final c = LocalizationEntry('k', {'en': 'x'});
+    final a = LocalizationEntry('k', const {'en': 'v'});
+    final b = LocalizationEntry('k', const {'en': 'v'});
+    final c = LocalizationEntry('k', const {'en': 'x'});
     expect(a, equals(b));
     expect(a == c, isFalse);
     expect(a.hashCode, equals(b.hashCode));

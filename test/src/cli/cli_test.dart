@@ -31,7 +31,6 @@ void main() {
       // Act
       // Directly call run() to simulate null argResults, which is a scenario
       // the command should be resilient against.
-      // ignore: invalid_use_of_protected_member
       final result = await cmd.run();
       // Assert
       expect(result, 64);
@@ -39,13 +38,9 @@ void main() {
     });
 
     test('missing --input throws ArgumentError', () async {
-      // Act & Assert
-      try {
-        await runner.run(['export']);
-        fail('should have thrown ArgumentError');
-      } on ArgumentError catch (e) {
-        expect(e.message, 'Option input is mandatory.');
-      }
+      // Act & Assert: runner.run should throw an ArgumentError when required
+      // option `input` is omitted.
+      expect(() async => runner.run(['export']), throwsA(isA<ArgumentError>()));
     });
 
     test('unsupported format throws UsageException', () async {

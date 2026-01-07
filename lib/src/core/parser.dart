@@ -1,14 +1,16 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
-import 'model.dart';
+import 'package:locale_sheet/src/core/model.dart';
 
 /// XLSX のバイトを解析して [LocalizationSheet] に変換します。
 ///
 /// 前提:
-/// - 1行目はヘッダ行であること。1列目のヘッダは `key` でなければなりません。
+/// - 1行目はヘッダ行であること。
+///   1列目のヘッダは `key` でなければなりません。
 /// - ヘッダの2列目以降はロケールコード（例: `en`, `ja`）です。
 /// - 2行目以降は各行がキーと各ロケールの翻訳を持ちます。
 class ExcelParser {
+  /// Parse XLSX bytes and return a [LocalizationSheet].
   LocalizationSheet parse(Uint8List bytes) {
     final excel = Excel.decodeBytes(bytes);
     // Use the first sheet found
@@ -21,7 +23,8 @@ class ExcelParser {
       return LocalizationSheet(locales: [], entries: []);
     }
 
-    // Determine max columns from existing rows for robust handling across excel versions
+    // Determine max columns from existing rows for robust handling
+    // across different Excel library versions.
     var maxCols = 0;
     for (final r in rows) {
       if (r.length > maxCols) maxCols = r.length;
@@ -35,7 +38,7 @@ class ExcelParser {
     }
 
     if (header.isEmpty || header[0].trim().toLowerCase() != 'key') {
-      throw FormatException('First header cell must be "key"');
+      throw const FormatException('First header cell must be "key"');
     }
 
     final locales = header.skip(1).where((h) => h.trim().isNotEmpty).toList();
