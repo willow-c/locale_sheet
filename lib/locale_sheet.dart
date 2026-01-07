@@ -1,17 +1,16 @@
-library;
-
-export 'src/core/model.dart';
-export 'src/core/parser.dart';
-export 'src/exporters/exporter.dart';
-export 'src/exporters/arb_exporter.dart';
-export 'src/cli/cli.dart';
 
 import 'dart:io' as io;
 import 'dart:typed_data';
 
-import 'src/core/parser.dart' show ExcelParser;
-import 'src/exporters/arb_exporter.dart' show ArbExporter;
-import 'src/exporters/exporter.dart' show LocalizationExporter;
+import 'package:locale_sheet/src/core/parser.dart' show ExcelParser;
+import 'package:locale_sheet/src/exporters/arb_exporter.dart' show ArbExporter;
+import 'package:locale_sheet/src/exporters/exporter.dart' show LocalizationExporter;
+
+export 'src/cli/cli.dart';
+export 'src/core/model.dart';
+export 'src/core/parser.dart';
+export 'src/exporters/arb_exporter.dart';
+export 'src/exporters/exporter.dart';
 
 /// Excel のバイト列を解析し、渡された [exporter] を使って出力します。
 ///

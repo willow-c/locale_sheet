@@ -8,8 +8,9 @@ void main() {
     // Arrange
     final logger = SimpleLogger();
     // Act
-    logger.info('info message');
-    logger.error('error message');
+    final _ = logger
+      ..info('info message')
+      ..error('error message');
     // Assert: 標準出力内容はここでは検証しない（呼び出しが例外なく通ることのみ確認）
   });
 }

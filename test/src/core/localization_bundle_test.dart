@@ -6,7 +6,7 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationBundle behaviors', () {
     // Arrange
-    final bundle = LocalizationBundle('en', {
+    final bundle = LocalizationBundle('en', const {
       'hello': 'Hello',
       'bye': 'Goodbye',
     });
@@ -21,12 +21,12 @@ void main() {
     expect(restored.locale, 'en');
     expect(restored['bye'], 'Goodbye');
 
-    final copy = bundle.copyWith(entries: {'x': 'y'});
+    final copy = bundle.copyWith(entries: const {'x': 'y'});
     expect(copy.locale, 'en');
     expect(copy['x'], 'y');
 
-    final a = LocalizationBundle('en', {'k': 'v'});
-    final b = LocalizationBundle('en', {'k': 'v'});
+    final a = LocalizationBundle('en', const {'k': 'v'});
+    final b = LocalizationBundle('en', const {'k': 'v'});
     expect(a, equals(b));
     expect(a.hashCode, equals(b.hashCode));
   });
@@ -35,9 +35,9 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationBundle equality and hashCode edge', () {
     // Arrange & Act & Assert
-    final a = LocalizationBundle('en', {});
-    final b = LocalizationBundle('en', {});
-    final c = LocalizationBundle('en', {'k': 'v'});
+    final a = LocalizationBundle('en', const {});
+    final b = LocalizationBundle('en', const {});
+    final c = LocalizationBundle('en', const {'k': 'v'});
     expect(a, equals(b));
     expect(a == c, isFalse);
     expect(a.hashCode, equals(b.hashCode));
@@ -47,7 +47,7 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationBundle fromMap with null/invalid values', () {
     // Arrange & Act & Assert
-    final m = {'hello': null, 'bye': 123};
+    const m = {'hello': null, 'bye': 123};
     final b = LocalizationBundle.fromMap('en', m);
     expect(b['hello'], isNull);
     expect(b['bye'], '123');

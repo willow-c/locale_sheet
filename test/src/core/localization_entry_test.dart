@@ -6,7 +6,7 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationEntry basic behaviors', () {
     // Arrange
-    final e = LocalizationEntry('hello', {
+    final e = LocalizationEntry('hello', const {
       'en': 'Hello',
       'ja': 'こんにちは',
     }, description: 'greeting');
@@ -25,8 +25,8 @@ void main() {
     expect(restored.description, e.description);
     expect(restored.translations['en'], 'Hello');
 
-    final eA = LocalizationEntry('k', {'a': '1'});
-    final eB = LocalizationEntry('k', {'a': '1'});
+    final eA = LocalizationEntry('k', const {'a': '1'});
+    final eB = LocalizationEntry('k', const {'a': '1'});
     expect(eA, equals(eB));
     expect(eA.hashCode, equals(eB.hashCode));
   });
@@ -36,18 +36,18 @@ void main() {
   test('LocalizationEntry fromMap with missing/invalid fields', () {
     // Arrange & Act & Assert
     // missing translations
-    final m1 = {'key': 'k'};
+    const m1 = {'key': 'k'};
     final e1 = LocalizationEntry.fromMap(m1);
     expect(e1.key, 'k');
     expect(e1.translations, isEmpty);
 
     // null translations
-    final m2 = {'key': 'k', 'translations': null};
+    const m2 = {'key': 'k', 'translations': null};
     final e2 = LocalizationEntry.fromMap(m2);
     expect(e2.translations, isEmpty);
 
     // non-string values
-    final m3 = {
+    const m3 = {
       'key': 'k',
       'translations': {'en': 123, 'ja': null},
     };
@@ -60,9 +60,9 @@ void main() {
   /// Arrange-Act-Assertパターン
   test('LocalizationEntry equality and hashCode edge', () {
     // Arrange & Act & Assert
-    final a = LocalizationEntry('k', {'en': 'v'});
-    final b = LocalizationEntry('k', {'en': 'v'});
-    final c = LocalizationEntry('k', {'en': 'x'});
+    final a = LocalizationEntry('k', const {'en': 'v'});
+    final b = LocalizationEntry('k', const {'en': 'v'});
+    final c = LocalizationEntry('k', const {'en': 'x'});
     expect(a, equals(b));
     expect(a == c, isFalse);
     expect(a.hashCode, equals(b.hashCode));

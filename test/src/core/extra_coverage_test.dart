@@ -1,17 +1,18 @@
 import 'dart:io';
 
+import 'package:args/command_runner.dart';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/locale_sheet.dart';
-import 'package:args/command_runner.dart';
 import 'package:test/test.dart';
+
 import '../../test_helpers/logger.dart';
 
 void main() {
   test('Parser treats null cell value as empty string -> translation null', () {
     final excel = Excel.createExcel();
-    final sheet = excel['Sheet1'];
-    sheet.appendRow([TextCellValue('key'), TextCellValue('en')]);
-    sheet.appendRow([TextCellValue('hello'), null]);
+    excel['Sheet1']
+      ..appendRow([TextCellValue('key'), TextCellValue('en')])
+      ..appendRow([TextCellValue('hello'), null]);
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_null_cell');
     final file = File('${tmp.path}/nullcell.xlsx')..writeAsBytesSync(bytes!);
@@ -34,7 +35,7 @@ void main() {
   });
 
   test('LocalizationEntry.copyWith preserves defaults when nulls passed', () {
-    final e = LocalizationEntry('k', {'en': 'v'}, description: 'd');
+    final e = LocalizationEntry('k', const {'en': 'v'}, description: 'd');
     final e2 = e.copyWith();
     expect(e2.key, 'k');
     expect(e2.translations['en'], 'v');
@@ -44,15 +45,15 @@ void main() {
   });
 
   test('LocalizationBundle.fromMap skips null values', () {
-    final b = LocalizationBundle.fromMap('en', {'a': '1', 'b': null});
+    final b = LocalizationBundle.fromMap('en', const {'a': '1', 'b': null});
     expect(b['a'], '1');
     expect(b['b'], isNull);
     expect(b.toMap().containsKey('b'), isFalse);
   });
 
   test('LocalizationBundle.copyWith entries override works', () {
-    final b = LocalizationBundle('en', {'a': '1'});
-    final b2 = b.copyWith(entries: {'b': '2'});
+    final b = LocalizationBundle('en', const {'a': '1'});
+    final b2 = b.copyWith(entries: const {'b': '2'});
     expect(b2['b'], '2');
     final b3 = b.copyWith();
     expect(b3['a'], '1');

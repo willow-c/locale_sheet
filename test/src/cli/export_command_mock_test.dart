@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:args/command_runner.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:locale_sheet/locale_sheet.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 class MockExporter extends Mock implements LocalizationExporter {}
@@ -21,8 +21,8 @@ class TestLogger implements Logger {
 }
 
 class FakeParser extends ExcelParser {
-  final LocalizationSheet sheet;
   FakeParser(this.sheet);
+  final LocalizationSheet sheet;
 
   @override
   LocalizationSheet parse(Uint8List bytes) => sheet;
@@ -30,16 +30,18 @@ class FakeParser extends ExcelParser {
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(LocalizationSheet(locales: [], entries: []));
+    registerFallbackValue(
+      LocalizationSheet(locales: const [], entries: const []),
+    );
   });
 
   test('ExportCommand calls injected exporter (mocktail)', () async {
     final logger = TestLogger();
 
     final sheet = LocalizationSheet(
-      locales: ['en'],
+      locales: const ['en'],
       entries: [
-        LocalizationEntry('k', {'en': 'v'}),
+        LocalizationEntry('k', const {'en': 'v'}),
       ],
     );
     final parser = FakeParser(sheet);

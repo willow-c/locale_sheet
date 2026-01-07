@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../core/model.dart';
-import 'exporter.dart';
+import 'package:locale_sheet/src/core/model.dart';
+import 'package:locale_sheet/src/exporters/exporter.dart';
 
 /// ARB エクスポーターの実装。
 class ArbExporter implements LocalizationExporter {
@@ -20,7 +20,7 @@ class ArbExporter implements LocalizationExporter {
     // and `defaultLocale` is provided, fall back to the default locale's
     // translation when available.
     for (final locale in sheet.locales) {
-      final Map<String, dynamic> arb = {};
+      final arb = <String, dynamic>{};
       for (final entry in sheet.entries) {
         var value = entry.translations[locale];
         if (value == null && defaultLocale != null) {
@@ -42,7 +42,7 @@ class ArbExporter implements LocalizationExporter {
 
       final fileName = 'app_$locale.arb';
       final file = File('${dir.path}/$fileName');
-      final encoder = JsonEncoder.withIndent('  ');
+      const encoder = JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(sorted));
     }
   }

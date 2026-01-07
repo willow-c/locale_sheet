@@ -1,7 +1,32 @@
-import 'model_helpers.dart';
+import 'package:locale_sheet/src/core/model_helpers.dart';
+import 'package:meta/meta.dart';
 
 /// 単一のローカライズ項目（スプレッドシートの1行に相当）。
+@immutable
 class LocalizationEntry {
+  /// Create a localization entry with a `key` and per-locale `translations`.
+  /// Optional `description` can be provided.
+  LocalizationEntry(
+    this.key,
+    Map<String, String?> translations, {
+    this.description,
+  }) : translations = Map.unmodifiable(Map.from(translations));
+
+  /// マップから復元します。
+  factory LocalizationEntry.fromMap(Map<String, dynamic> m) {
+    final trans = <String, String?>{};
+    if (m['translations'] is Map) {
+      (m['translations'] as Map).forEach((k, v) {
+        trans[k.toString()] = v?.toString();
+      });
+    }
+    return LocalizationEntry(
+      m['key'].toString(),
+      trans,
+      description: m['description']?.toString(),
+    );
+  }
+
   /// ローカライズキー（例: `hello`）。
   final String key;
 
@@ -11,12 +36,6 @@ class LocalizationEntry {
 
   /// 任意の説明やコメント。
   final String? description;
-
-  LocalizationEntry(
-    this.key,
-    Map<String, String?> translations, {
-    this.description,
-  }) : translations = Map.unmodifiable(Map.from(translations));
 
   /// 指定した [locale] の翻訳を返します。存在しない場合は `null` を返します。
   String? translationFor(String locale) => translations[locale];
@@ -40,21 +59,6 @@ class LocalizationEntry {
     'translations': translations,
     'description': description,
   };
-
-  /// マップから復元します。
-  factory LocalizationEntry.fromMap(Map<String, dynamic> m) {
-    final trans = <String, String?>{};
-    if (m['translations'] is Map) {
-      (m['translations'] as Map).forEach((k, v) {
-        trans[k.toString()] = v?.toString();
-      });
-    }
-    return LocalizationEntry(
-      m['key'].toString(),
-      trans,
-      description: m['description']?.toString(),
-    );
-  }
 
   @override
   bool operator ==(Object other) {

@@ -9,10 +9,13 @@ void main() {
   test('ArbExporter writes files and includes @@locale', () async {
     // Arrange
     final entries = [
-      LocalizationEntry('hello', {'en': 'Hello', 'ja': 'こんにちは'}),
-      LocalizationEntry('bye', {'en': 'Goodbye', 'ja': null}),
+      LocalizationEntry('hello', const {'en': 'Hello', 'ja': 'こんにちは'}),
+      LocalizationEntry('bye', const {'en': 'Goodbye', 'ja': null}),
     ];
-    final sheet = LocalizationSheet(locales: ['en', 'ja'], entries: entries);
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'ja'],
+      entries: entries,
+    );
     final tmp = Directory.systemTemp.createTempSync('arb_export_test');
     final outDir = '${tmp.path}/out';
     final exporter = ArbExporter();

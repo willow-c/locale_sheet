@@ -7,10 +7,13 @@ void main() {
   test('bundleFor returns correct bundle and throws on missing locale', () {
     // Arrange
     final entries = [
-      LocalizationEntry('hello', {'en': 'Hello', 'ja': 'こんにちは'}),
-      LocalizationEntry('bye', {'en': 'Goodbye'}),
+      LocalizationEntry('hello', const {'en': 'Hello', 'ja': 'こんにちは'}),
+      LocalizationEntry('bye', const {'en': 'Goodbye'}),
     ];
-    final sheet = LocalizationSheet(locales: ['en', 'ja'], entries: entries);
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'ja'],
+      entries: entries,
+    );
     // Act
     final enBundle = sheet.bundleFor('en');
     final jaBundle = sheet.bundleFor('ja');
@@ -28,9 +31,12 @@ void main() {
   test('toBundles returns all locale bundles, handles empty', () {
     // Arrange
     final entries = [
-      LocalizationEntry('k', {'en': 'v1', 'ja': 'v2'}),
+      LocalizationEntry('k', const {'en': 'v1', 'ja': 'v2'}),
     ];
-    final sheet = LocalizationSheet(locales: ['en', 'ja'], entries: entries);
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'ja'],
+      entries: entries,
+    );
     // Act
     final bundles = sheet.toBundles();
     // Assert
@@ -41,7 +47,7 @@ void main() {
     expect(bundles[1]['k'], 'v2');
 
     // 空ロケール・空エントリ
-    final emptySheet = LocalizationSheet(locales: [], entries: []);
+    final emptySheet = LocalizationSheet(locales: const [], entries: const []);
     expect(emptySheet.toBundles(), isEmpty);
   });
 
@@ -50,10 +56,13 @@ void main() {
   test('LocalizationSheet basic behaviors', () {
     // Arrange
     final entries = [
-      LocalizationEntry('hello', {'en': 'Hello', 'ja': 'こんにちは'}),
-      LocalizationEntry('bye', {'en': 'Goodbye', 'ja': 'さようなら'}),
+      LocalizationEntry('hello', const {'en': 'Hello', 'ja': 'こんにちは'}),
+      LocalizationEntry('bye', const {'en': 'Goodbye', 'ja': 'さようなら'}),
     ];
-    final sheet = LocalizationSheet(locales: ['en', 'ja'], entries: entries);
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'ja'],
+      entries: entries,
+    );
 
     // Act & Assert
     expect(sheet.locales, ['en', 'ja']);
