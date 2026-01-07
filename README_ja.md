@@ -24,7 +24,7 @@ dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./
 ```
 
 補足:
-- `--default-locale` オプション（短縮 `-d`）は、翻訳が欠けている場合にフォールバックするロケールを指定します。
+- `--default-locale` オプション（短縮 `-d`）は、デフォルト言語とするロケールを指定します。
 - `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
 
 3. プログラム的に使う（最短）:
@@ -62,6 +62,7 @@ void main() async {
   - `--input` / `-i`: 入力 XLSX ファイルのパス（必須）
   - `--format`: 出力形式（`arb`）
   - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
+  - `--default-locale` / `-d`: デフォルト言語とするロケールを指定します。指定したロケールがシートに存在しない場合は終了コード `64` でエラー終了します。未指定時はシートに `en` があれば `en` を使い、なければ最初のロケール列を使用します。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`

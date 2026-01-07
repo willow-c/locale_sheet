@@ -24,7 +24,7 @@ dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./
 ```
 
 Notes:
-- The `--default-locale` option (short `-d`) specifies a fallback locale to use when a translation is missing.
+- The `--default-locale` option (short `-d`) specifies the locale to be used as the default language.
 - If `--default-locale` is omitted, the CLI will use `en` if present in the sheet; otherwise it uses the first locale column.
 
 3. Programmatic usage (minimal):
@@ -62,6 +62,7 @@ void main() async {
   - `--input` / `-i`: Path to the input XLSX file (required)
   - `--format`: Output format (e.g. `arb`)
   - `--out` / `-o`: Output directory (default: `.`)
+  - `--default-locale` / `-d`: Specifies the locale to be used as the default language. If specified and the locale is not present in the sheet, the command exits with code `64`. If omitted, the CLI uses `en` if present, otherwise the first locale column.
 
 - Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`
