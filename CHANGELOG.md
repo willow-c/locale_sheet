@@ -1,5 +1,11 @@
 # CHANGE LOG
 
+## 0.2.0 - 2026-01-10
+
+- refactor: update analysis options and improve code structure ([#3](https://github.com/willow-c/locale_sheet/pull/3))
+- feat: implement locale validation and normalization functions ([#5](https://github.com/willow-c/locale_sheet/pull/5))
+- feat: Add `--sheet-name` option for sheet selection and improve documentation ([#7](https://github.com/willow-c/locale_sheet/pull/7))
+
 ## 0.1.1 - 2026-01-06
 
 - Fixed: Quick Start in `README.md` / `README_ja.md` — dependency example updated to `locale_sheet: ^0.1.1` (previously `^0.0.2`).
