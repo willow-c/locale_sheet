@@ -42,6 +42,7 @@ brew install lcov
 - 2行目以降が翻訳エントリ。空セルは未定義として扱う。
 
 例:
+
 |key|en|ja|
 |:--|:--|:--|
 |hello|Hello|こんにちは|
