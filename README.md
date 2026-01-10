@@ -20,7 +20,7 @@ dev_dependencies:
 
 ```bash
 dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
 Notes:
@@ -64,11 +64,14 @@ void main() async {
   - `--format`: Output format (e.g. `arb`)
   - `--out` / `-o`: Output directory (default: `.`)
   - `--default-locale` / `-d`: Specifies the locale to be used as the default language. If specified and the locale is not present in the sheet, the command exits with code `64`. If omitted, the CLI uses `en` if present, otherwise the first locale column.
+  - `--sheet-name`: Specifies the name of the sheet to convert. If omitted, the first sheet in the file is used. Sheet names are case-sensitive (`Sheet1` and `sheet1` are treated as different sheets) and only a single sheet name may be provided. If the specified sheet does not exist, parsing will fail and the command will exit with an error. This option is honored by all exporters.
 
 - Main public API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName})`
   - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
+
+Both helper functions accept an optional `sheetName` parameter. When provided that sheet name is parsed; when `null` (or omitted) the first sheet in the workbook is used. If the specified sheet is not present a `SheetNotFoundException` is thrown (the CLI prints available sheets and exits with code `64`).
 
 ## Examples
 

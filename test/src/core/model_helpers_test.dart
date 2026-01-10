@@ -35,16 +35,40 @@ void main() {
   });
 
   test('isValidLocaleTag accepts common forms (additional)', () {
-    expect(isValidLocaleTag('en'), isTrue);
-    expect(isValidLocaleTag('zh-Hant-HK'), isTrue);
-    expect(isValidLocaleTag('zh_Hant_TW'), isTrue);
+    // Arrange
+    const a = 'en';
+    const b = 'zh-Hant-HK';
+    const c = 'zh_Hant_TW';
+
+    // Act
+    final ra = isValidLocaleTag(a);
+    final rb = isValidLocaleTag(b);
+    final rc = isValidLocaleTag(c);
+
+    // Assert
+    expect(ra, isTrue);
+    expect(rb, isTrue);
+    expect(rc, isTrue);
   });
 
   test('isValidLocaleTag rejects other invalid inputs', () {
-    expect(isValidLocaleTag(''), isFalse);
-    expect(isValidLocaleTag('a'), isFalse);
-    expect(isValidLocaleTag('in/valid'), isFalse);
-    expect(isValidLocaleTag('en.'), isFalse);
+    // Arrange
+    const a = '';
+    const b = 'a';
+    const c = 'in/valid';
+    const d = 'en.';
+
+    // Act
+    final ra = isValidLocaleTag(a);
+    final rb = isValidLocaleTag(b);
+    final rc = isValidLocaleTag(c);
+    final rd = isValidLocaleTag(d);
+
+    // Assert
+    expect(ra, isFalse);
+    expect(rb, isFalse);
+    expect(rc, isFalse);
+    expect(rd, isFalse);
   });
 
   test('isSafeArbLocaleTag enforces filename safety and Windows rules', () {
@@ -66,4 +90,24 @@ void main() {
       expect(r, isFalse);
     }
   });
+
+  test(
+    'isSafeArbLocaleTag rejects tags with double hyphen or leading/trailing hyphen',
+    () {
+      // Arrange
+      const a = 'en--US';
+      const b = '-en';
+      const c = 'en-';
+
+      // Act
+      final ra = isSafeArbLocaleTag(a);
+      final rb = isSafeArbLocaleTag(b);
+      final rc = isSafeArbLocaleTag(c);
+
+      // Assert
+      expect(ra, isFalse);
+      expect(rb, isFalse);
+      expect(rc, isFalse);
+    },
+  );
 }

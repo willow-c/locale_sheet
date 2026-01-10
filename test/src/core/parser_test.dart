@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/parser.dart';
 import 'package:test/test.dart';
@@ -74,5 +75,68 @@ void main() {
     expect(entry.translations['ja'], equals('こんにちは'));
 
     tmp.deleteSync(recursive: true);
+  });
+
+  test('parse reads a specified sheet by name', () {
+    final excel = Excel.createExcel();
+    // default sheet left untouched
+    excel['MySheet'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+    ]);
+    excel['MySheet'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Hello'),
+    ]);
+
+    final bytes = excel.encode();
+    final tmp = Directory.systemTemp.createTempSync('parser_sheetname');
+    final file = File('${tmp.path}/sheetname.xlsx')..writeAsBytesSync(bytes!);
+    final parser = ExcelParser();
+
+    final sheetModel = parser.parse(
+      file.readAsBytesSync(),
+      sheetName: 'MySheet',
+    );
+
+    expect(sheetModel.locales, equals(['en']));
+    expect(sheetModel.entries.length, equals(1));
+    expect(sheetModel.entries.first.key, equals('greeting'));
+
+    tmp.deleteSync(recursive: true);
+  });
+
+  test('parse throws when specified sheet name does not exist', () {
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([TextCellValue('key'), TextCellValue('en')]);
+    final bytes = excel.encode();
+    final tmp = Directory.systemTemp.createTempSync('parser_missing_sheet');
+    final file = File('${tmp.path}/missing.xlsx')..writeAsBytesSync(bytes!);
+    final parser = ExcelParser();
+
+    expect(
+      () => parser.parse(file.readAsBytesSync(), sheetName: 'NoSuch'),
+      throwsA(isA<SheetNotFoundException>()),
+    );
+
+    tmp.deleteSync(recursive: true);
+  });
+
+  test('parse throws when workbook has no sheets', () {
+    // Arrange: create an Excel and remove all sheets (empty workbook)
+    // Simulate a decoder that cannot provide any sheets by throwing
+    // SheetNotFoundException directly. This models the condition where
+    // the workbook contains no usable sheets.
+    final parser = ExcelParser(
+      decoder: (_) {
+        throw SheetNotFoundException('(first sheet)', <String>[]);
+      },
+    );
+
+    // Act & Assert: parsing should propagate SheetNotFoundException
+    expect(
+      () => parser.parse(Uint8List.fromList([])),
+      throwsA(isA<SheetNotFoundException>()),
+    );
   });
 }

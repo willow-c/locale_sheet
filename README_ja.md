@@ -20,7 +20,7 @@ dev_dependencies:
 
 ```bash
 dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
 補足:
@@ -64,11 +64,14 @@ void main() async {
   - `--format`: 出力形式（`arb`）
   - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
   - `--default-locale` / `-d`: デフォルト言語とするロケールを指定します。指定したロケールがシートに存在しない場合は終了コード `64` でエラー終了します。未指定時はシートに `en` があれば `en` を使い、なければ最初のロケール列を使用します。
+  - `--sheet-name`: 変換するシート名を指定します。省略した場合はファイル内の最初のシートを使用します。シート名は大文字小文字を区別します（`Sheet1` と `sheet1` は別扱い）し、単一のシート名のみ指定できます。指定したシートが存在しない場合はパース時にエラーとなり処理は失敗します。全てのエクスポーターで有効です。
 
 - 主な公開 API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName})`
   - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
+
+両方のヘルパー関数はオプションの `sheetName` 引数を受け取ります。`sheetName` を指定するとその名前のシートが解析され、`null`（省略）ならワークブックの最初のシートが使用されます。指定したシートが存在しない場合は `SheetNotFoundException` が発生します（CLI 実行時は利用可能なシートを表示して終了コード `64` で終了します）。
 
 ## Examples
 
