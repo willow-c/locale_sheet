@@ -91,7 +91,6 @@ bool isSafeArbLocaleTag(String input) {
     'PRN',
     'AUX',
     'NUL',
-    r'CLOCK$',
     'COM1',
     'COM2',
     'COM3',
