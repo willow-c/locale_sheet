@@ -40,9 +40,9 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 
-  /// ヘッダにロケールでない列が混ざっている場合、それらは無視されることを検証
-  test('parse ignores non-locale header columns', () {
-    // Arrange: ヘッダーに 'notes' のような非ロケール列を挟む
+  /// ヘッダに単純な英字単語の列が混ざっている場合、現状ではそれらがロケールとして扱われることを検証
+  test('parse treats simple-word headers as locale tags', () {
+    // Arrange: ヘッダーに 'notes' のような単純英字列を挟む
     final excel = Excel.createExcel();
     excel['Sheet1'].appendRow([
       TextCellValue('key'),
