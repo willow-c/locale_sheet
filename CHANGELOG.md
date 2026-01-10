@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 0.x.x - 20xx-xx-xx
+
+- chore: standardize CLI/runtime messages to English; update README and tests accordingly ([#10](https://github.com/willow-c/locale_sheet/pull/10))
+
 ## 0.2.0 - 2026-01-10
 
 - refactor: update analysis options and improve code structure ([#3](https://github.com/willow-c/locale_sheet/pull/3))
