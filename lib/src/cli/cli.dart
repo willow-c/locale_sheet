@@ -24,16 +24,16 @@ class ExportCommand extends Command<int> {
       ..addOption(
         'input',
         abbr: 'i',
-        help: '入力 .xlsx ファイルのパス。',
+        help: 'Path to the input .xlsx file.',
         mandatory: true,
       )
       ..addOption(
         'format',
         defaultsTo: 'arb',
-        help: '出力フォーマット。',
+        help: 'Output format.',
         allowed: allowedFormats,
       )
-      ..addOption('out', abbr: 'o', defaultsTo: '.', help: '出力ディレクトリ。')
+      ..addOption('out', abbr: 'o', defaultsTo: '.', help: 'Output directory.')
       ..addOption(
         'default-locale',
         abbr: 'd',
@@ -43,7 +43,8 @@ class ExportCommand extends Command<int> {
       )
       ..addOption(
         'sheet-name',
-        help: '変換するシート名。指定しない場合は最初のシートを使用します。',
+        help:
+            'Name of the sheet to convert. If omitted, the first sheet in the workbook is used.',
       );
   }
 
@@ -53,7 +54,8 @@ class ExportCommand extends Command<int> {
 
   /// Short description shown in help text.
   @override
-  final description = 'ローカライズ用のExcelシートを指定された形式に変換します。';
+  final description =
+      'Convert a localization Excel sheet to the specified format.';
 
   /// Logger used to emit messages; injectable for tests.
   final Logger logger;
