@@ -25,7 +25,7 @@
   - `app_en.arb`
   - `app_zh_TW.arb`
   - `app_zh_Hant_HK.arb`
-- 内部では元のヘッダ値（例: `zh-Hant-HK` または `zh_Hant_HK`）を `@@locale` に保持します。
+- `@@locale` フィールドには、ファイル名と一致するようにアンダースコアで正規化されたロケールタグが設定されます。例えば、ヘッダ `zh-Hant-HK` は `@@locale` では `zh_Hant_HK` となります。
 - Windows の予約語（`CON`, `PRN`, `AUX`, `NUL`, `COM1`…など）や末尾にスペース/ピリオドがあるタグはファイル名として拒否されます。
 
 ## `key` 列について

@@ -25,7 +25,9 @@ This file contains sample data used for testing and verifying the behavior of th
   - `app_en.arb`
   - `app_zh_TW.arb`
   - `app_zh_Hant_HK.arb`
-- The original header value is preserved in the generated ARB under the `@@locale` field.
+- The `@@locale` field in each generated ARB uses the normalized locale tag (underscores, matching
+- the ARB filename), not the raw header string. For example, a header `zh-Hant-HK` will appear as
+- `zh_Hant_HK` in `@@locale`.
 - Tags that would create invalid filenames on Windows (reserved names such as `CON`, `PRN`, `AUX`, `NUL`, `COM1`, etc., or names ending with a space or dot) are rejected by the exporter.
 
 ## `key` column
