@@ -34,7 +34,7 @@ void main() {
       final result = await cmd.run();
       // Assert
       expect(result, 64);
-      expect(logger.errors.first, contains('引数の解析に失敗しました'));
+      expect(logger.errors.first, contains('Failed to parse arguments'));
     });
 
     test('missing --input throws ArgumentError', () async {
@@ -74,7 +74,7 @@ void main() {
       // Assert
       expect(result, 1);
       expect(logger.errors, isNotEmpty);
-      expect(logger.errors.first, contains('エラーが発生しました'));
+      expect(logger.errors.first, contains('An error occurred'));
     });
   });
 }

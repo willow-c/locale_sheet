@@ -74,7 +74,7 @@ class ExportCommand extends Command<int> {
   Future<int> run() async {
     final argResults = this.argResults;
     if (argResults == null) {
-      logger.error('引数の解析に失敗しました。');
+      logger.error('Failed to parse arguments.');
       return 64;
     }
 
@@ -84,7 +84,7 @@ class ExportCommand extends Command<int> {
 
     final exporter = _exporters[format];
     if (exporter == null) {
-      logger.error('サポートされていないフォーマットです: $format');
+      logger.error('Unsupported format: $format');
       return 64;
     }
 
@@ -97,8 +97,8 @@ class ExportCommand extends Command<int> {
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
         logger.error(
-          '指定したシート "${e.requestedSheet}" が見つかりません。'
-          ' 利用可能なシート: $available',
+          'Specified sheet "${e.requestedSheet}" not found. '
+          'Available sheets: $available',
         );
 
         return 64;
@@ -127,10 +127,10 @@ class ExportCommand extends Command<int> {
       }
 
       await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
-      logger.info('"$format" 形式のファイルを $outDir に正常に出力しました。');
+      logger.info('"$format" format successfully written to $outDir.');
       return 0;
     } on Exception catch (e) {
-      logger.error('エラーが発生しました: $e');
+      logger.error('An error occurred: $e');
       return 1;
     }
   }
