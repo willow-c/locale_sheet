@@ -47,6 +47,8 @@ This file contains sample data used for testing and verifying the behavior of th
 dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
-This command reads the specified sheet (`Sheet2`) and writes ARB files to `./lib/l10n` when locale columns are present. If `--sheet-name` is omitted the first sheet in the workbook is used. If a non-existent sheet name is provided the CLI will list available sheets and exit with status code 64.
-
-The sample sheet itself is a small demo and does not represent production localization data.
+- Input file: `example/sample.xlsx`
+- Output format: `arb`
+- Output directory: `./lib/l10n`
+- Target sheet: `Sheet1`
+- Default locale: `en`

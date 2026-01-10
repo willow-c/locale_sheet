@@ -47,6 +47,8 @@
 dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
-上記コマンドはサンプルシートを読み込み、ロケール列が存在する場合に ARB ファイルを `./lib/l10n` に出力します（サンプルファイル自体はテスト用の簡易例です）。
-
-例: `--sheet-name Sheet2` を指定すると `Sheet2` を変換対象として読み込みます。
+- 入力ファイル: `example/sample.xlsx`
+- 出力フォーマット: `arb`
+- 出力先: `./lib/l10n`
+- 出力対象シート: `Sheet1`
+- デフォルトロケール: `en`
