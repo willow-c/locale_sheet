@@ -39,4 +39,40 @@ void main() {
     // Cleanup
     tmp.deleteSync(recursive: true);
   });
+
+  /// ヘッダに単純な英字単語の列が混ざっている場合、現状ではそれらがロケールとして扱われることを検証
+  test('parse treats simple-word headers as locale tags', () {
+    // Arrange: ヘッダーに 'notes' のような単純英字列を挟む
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+      TextCellValue('notes'),
+      TextCellValue('ja'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Hello'),
+      TextCellValue('meta'),
+      TextCellValue('こんにちは'),
+    ]);
+    final bytes = excel.encode();
+    final tmp = Directory.systemTemp.createTempSync('parser_nonlocale');
+    final file = File('${tmp.path}/nonlocale.xlsx')..writeAsBytesSync(bytes!);
+    final parser = ExcelParser();
+
+    // Act
+    final sheetModel = parser.parse(file.readAsBytesSync());
+
+    // Assert: locales はシンプルな英字ヘッダもロケールと解釈されるため
+    // 'notes' は現在ロケールと見なされる（既存のバリデータ挙動に合わせる）
+    expect(sheetModel.locales, equals(['en', 'notes', 'ja']));
+    expect(sheetModel.entries.length, equals(1));
+    final entry = sheetModel.entries.first;
+    expect(entry.key, equals('greeting'));
+    expect(entry.translations['en'], equals('Hello'));
+    expect(entry.translations['ja'], equals('こんにちは'));
+
+    tmp.deleteSync(recursive: true);
+  });
 }

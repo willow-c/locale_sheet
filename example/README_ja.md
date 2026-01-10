@@ -8,12 +8,34 @@
 
 ## サンプル内容
 
-| key   | en     | ja         |
-|-------|--------|------------|
-| hello | Hello  | こんにちは |
-| bye   | Goodbye| さようなら |
+|key|en|ja|zh|zh_TW|zh-Hant-HK|description|備考|
+|:--|:--|:--|:--|:--|:--|:--|:--|
+|hello|Hello|こんにちは|你好|你好|你好|the text 'Hello'|こんにちはの文言|
+|bye|Goodbye|さようなら|再见|再見|再見|the text 'Goodbye'|さようならの文言|
 
-## 使い方例
+## ロケール列の判別ルール
 
-1. Excelでsample.xlsxを開き、必要に応じて編集・保存
-2. `locale_sheet` CLIやAPIで `--input example/sample.xlsx` などとして利用
+- ヘッダ行の各セルがロケール文字列かどうか判断し、ロケール列のみを出力対象とします。`key` 列およびロケール列に該当しない列（例: `description`, `備考`）は出力されません。
+- `-` と `_` は等価に扱います（`zh-Hant-HK` と `zh_Hant_HK` は同一視）。
+- 大文字小文字は比較時に区別しません（実装上はトリムを行い、解析時に区切りを統一して検証します）。詳細は `lib/src/core/model_helpers.dart` の `normalizeLocaleTag` / `isValidLocaleTag` を参照してください。
+
+## ARB 出力時の振る舞い
+
+- ARB ファイル名は Flutter の慣例に合わせてアンダースコアを使います。たとえばヘッダが `en`、`zh_TW`、`zh-Hant-HK` の場合、それぞれの出力ファイルは次のようになります：
+  - `app_en.arb`
+  - `app_zh_TW.arb`
+  - `app_zh_Hant_HK.arb`
+- `@@locale` フィールドには、ファイル名と一致するようにアンダースコアで正規化されたロケールタグが設定されます。例えば、ヘッダ `zh-Hant-HK` は `@@locale` では `zh_Hant_HK` となります。
+- Windows の予約語（`CON`, `PRN`, `AUX`, `NUL`, `COM1`…など）や末尾にスペース/ピリオドがあるタグはファイル名として拒否されます。
+
+## `key` 列について
+
+- 先頭ヘッダ行に `key` 列が存在することが必須です。`key` 列の値が各文言のリソースキーになります。
+
+## CLI 実行例
+
+```bash
+dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+```
+
+上記コマンドはサンプルシートを読み込み、ロケール列が存在する場合に ARB ファイルを `./lib/l10n` に出力します（サンプルファイル自体はテスト用の簡易例です）。
