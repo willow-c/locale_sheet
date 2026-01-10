@@ -11,45 +11,45 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
 
 1. 依存を追加（`pubspec.yaml`）:
 
-```yaml
-dev_dependencies:
-  locale_sheet: ^0.2.0
-```
+    ```yaml
+    dev_dependencies:
+    locale_sheet: ^0.2.0
+    ```
 
 1. パッケージを取得して実行（CLI）:
 
-```bash
-dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
-```
+    ```bash
+    dart pub get
+    dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
+    ```
 
-補足:
+    補足:
 
-- `--default-locale` オプション（短縮 `-d`）は、デフォルト言語とするロケールを指定します。
-- `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
+    - `--default-locale` オプション（短縮 `-d`）は、デフォルト言語とするロケールを指定します。
+    - `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
 
 1. プログラム的に使う（最短）:
 
-```dart
-import 'package:args/command_runner.dart';
-import 'package:locale_sheet/locale_sheet.dart';
+    ```dart
+    import 'package:args/command_runner.dart';
+    import 'package:locale_sheet/locale_sheet.dart';
 
-void main() async {
-  final runner = CommandRunner<int>('locale_sheet', 'programmatic runner')
-    ..addCommand(ExportCommand());
+    void main() async {
+      final runner = CommandRunner<int>('locale_sheet', 'programmatic runner')
+        ..addCommand(ExportCommand());
 
-  // Programmatic 実行（default-locale 指定例）:
-  await runner.run([
-    'export',
-    '--input',
-    'path/to/file.xlsx',
-    '--out',
-    './lib/l10n',
-    '--default-locale',
-    'en',
-  ]);
-}
-```
+      // Programmatic 実行（default-locale 指定例）:
+      await runner.run([
+        'export',
+        '--input',
+        'path/to/file.xlsx',
+        '--out',
+        './lib/l10n',
+        '--default-locale',
+        'en',
+      ]);
+    }
+    ```
 
 ## Features
 
@@ -88,26 +88,6 @@ void main() async {
 - `Unsupported format: <format>` が表示された場合は、`--format` にサポートされた値（デフォルト: `arb`）を指定してください。
 - `Specified sheet "<name>" not found.` が表示された場合は、シート名が大文字小文字を含めて正しいか、XLSX 内のシート一覧を確認してください。
 - `An error occurred: <details>` が表示された場合は、有効な入力ファイルで再実行し、ファイル権限やパスを確認してください。
-
-## Testing & Coverage
-
-開発向けのテストは下記で実行します:
-
-```bash
-dart test
-```
-
-カバレッジの生成には付属スクリプトを利用してください:
-
-```bash
-bash scripts/coverage.sh
-```
-
-## Contributing
-
-- コードをフォーマット: `dart format .`
-- テストを追加/修正: `dart test`
-- カバレッジの更新: `bash scripts/coverage.sh`
 
 ## License
 
