@@ -16,7 +16,7 @@ dev_dependencies:
   locale_sheet: ^0.1.1
 ```
 
-2. Install dependencies and run the CLI:
+1. Install dependencies and run the CLI:
 
 ```bash
 dart pub get
@@ -24,10 +24,11 @@ dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./
 ```
 
 Notes:
+
 - The `--default-locale` option (short `-d`) specifies the locale to be used as the default language.
 - If `--default-locale` is omitted, the CLI will use `en` if present in the sheet; otherwise it uses the first locale column.
 
-3. Programmatic usage (minimal):
+1. Programmatic usage (minimal):
 
 ```dart
 import 'package:args/command_runner.dart';

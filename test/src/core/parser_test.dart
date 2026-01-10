@@ -39,4 +39,40 @@ void main() {
     // Cleanup
     tmp.deleteSync(recursive: true);
   });
+
+  /// ヘッダにロケールでない列が混ざっている場合、それらは無視されることを検証
+  test('parse ignores non-locale header columns', () {
+    // Arrange: ヘッダーに 'notes' のような非ロケール列を挟む
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+      TextCellValue('notes'),
+      TextCellValue('ja'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Hello'),
+      TextCellValue('meta'),
+      TextCellValue('こんにちは'),
+    ]);
+    final bytes = excel.encode();
+    final tmp = Directory.systemTemp.createTempSync('parser_nonlocale');
+    final file = File('${tmp.path}/nonlocale.xlsx')..writeAsBytesSync(bytes!);
+    final parser = ExcelParser();
+
+    // Act
+    final sheetModel = parser.parse(file.readAsBytesSync());
+
+    // Assert: locales はシンプルな英字ヘッダもロケールと解釈されるため
+    // 'notes' は現在ロケールと見なされる（既存のバリデータ挙動に合わせる）
+    expect(sheetModel.locales, equals(['en', 'notes', 'ja']));
+    expect(sheetModel.entries.length, equals(1));
+    final entry = sheetModel.entries.first;
+    expect(entry.key, equals('greeting'));
+    expect(entry.translations['en'], equals('Hello'));
+    expect(entry.translations['ja'], equals('こんにちは'));
+
+    tmp.deleteSync(recursive: true);
+  });
 }

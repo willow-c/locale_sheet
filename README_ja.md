@@ -16,7 +16,7 @@ dev_dependencies:
   locale_sheet: ^0.1.1
 ```
 
-2. パッケージを取得して実行（CLI）:
+1. パッケージを取得して実行（CLI）:
 
 ```bash
 dart pub get
@@ -24,10 +24,11 @@ dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./
 ```
 
 補足:
+
 - `--default-locale` オプション（短縮 `-d`）は、デフォルト言語とするロケールを指定します。
 - `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
 
-3. プログラム的に使う（最短）:
+1. プログラム的に使う（最短）:
 
 ```dart
 import 'package:args/command_runner.dart';

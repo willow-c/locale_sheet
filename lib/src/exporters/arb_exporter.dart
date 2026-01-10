@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:locale_sheet/src/core/model.dart';
+import 'package:locale_sheet/src/core/model_helpers.dart';
 import 'package:locale_sheet/src/exporters/exporter.dart';
 
 /// ARB エクスポーターの実装。
@@ -30,7 +31,10 @@ class ArbExporter implements LocalizationExporter {
           arb[entry.key] = value;
         }
       }
-      arb['@@locale'] = locale;
+      final tag = normalizeLocaleTag(locale);
+      // Use underscore-separated tag for ARB @@locale to match filename.
+      final fileLocaleTag = tag.replaceAll('-', '_');
+      arb['@@locale'] = fileLocaleTag;
 
       // Sort keys for stable output; keep @@locale at the end.
       final keys = arb.keys.where((k) => k != '@@locale').toList()..sort();
@@ -40,7 +44,13 @@ class ArbExporter implements LocalizationExporter {
       }
       sorted['@@locale'] = arb['@@locale'];
 
-      final fileName = 'app_$locale.arb';
+      if (!isSafeArbLocaleTag(tag)) {
+        throw FormatException(
+          'Locale tag "$locale" is not valid for ARB filename',
+        );
+      }
+      // For ARB filenames follow Flutter convention: use underscores.
+      final fileName = 'app_$fileLocaleTag.arb';
       final file = File('${dir.path}/$fileName');
       const encoder = JsonEncoder.withIndent('  ');
       await file.writeAsString(encoder.convert(sorted));

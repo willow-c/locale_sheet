@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/model.dart';
+import 'package:locale_sheet/src/core/model_helpers.dart';
 
 /// XLSX のバイトを解析して [LocalizationSheet] に変換します。
 ///
@@ -41,7 +42,19 @@ class ExcelParser {
       throw const FormatException('First header cell must be "key"');
     }
 
-    final locales = header.skip(1).where((h) => h.trim().isNotEmpty).toList();
+    // Determine which header columns are actually locale IDs.
+    // Keep both the locale tag and the original column index
+    // so we can map rows safely.
+    final locales = <String>[];
+    final localeColIndices = <int>[];
+    for (var c = 1; c < header.length; c++) {
+      final h = header[c].trim();
+      if (h.isEmpty) continue;
+      if (isValidLocaleTag(h)) {
+        locales.add(h);
+        localeColIndices.add(c);
+      }
+    }
 
     final entries = <LocalizationEntry>[];
     for (var r = 1; r < maxRows; r++) {
@@ -53,7 +66,7 @@ class ExcelParser {
 
       final translations = <String, String?>{};
       for (var i = 0; i < locales.length; i++) {
-        final colIndex = i + 1;
+        final colIndex = localeColIndices[i];
         final cell = row.length > colIndex ? row[colIndex] : null;
         final value = _cellToString(cell);
         translations[locales[i]] = value.isEmpty ? null : value;
@@ -71,4 +84,6 @@ class ExcelParser {
     if (value == null) return '';
     return value.toString();
   }
+
+  // Uses `isValidLocaleTag` from model_helpers.dart
 }
