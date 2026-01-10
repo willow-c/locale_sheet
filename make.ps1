@@ -21,21 +21,14 @@ if (-not $Target) {
 
 $t = $Target.ToLower()
 
-if ($t -eq 'coverage') {
-    $p = Join-Path $PSScriptRoot 'coverage.ps1'
-    if (-not (Test-Path $p)) {
-        Write-Error "coverage.ps1 が見つかりません: $p"
-        exit 2
-    }
-    & $p
-    $scriptDir = Join-Path $PSScriptRoot 'scripts'
+$scriptDir = Join-Path $PSScriptRoot 'scripts'
 
-    switch ($t) {
-        'coverage' {
-            $p = Join-Path $scriptDir 'coverage.ps1'
-            if (-not (Test-Path $p)) { Write-Error "coverage.ps1 が見つかりません: $p"; exit 2 }
-            & $p; exit $LASTEXITCODE
-        }
+switch ($t) {
+    'coverage' {
+        $p = Join-Path $scriptDir 'coverage.ps1'
+        if (-not (Test-Path $p)) { Write-Error "coverage.ps1 が見つかりません: $p"; exit 2 }
+        & $p; exit $LASTEXITCODE
+    }
         'clean' {
             $p = Join-Path $scriptDir 'clean.ps1'
             if (-not (Test-Path $p)) { Write-Error "clean.ps1 が見つかりません: $p"; exit 2 }
