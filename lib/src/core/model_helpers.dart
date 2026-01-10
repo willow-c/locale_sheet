@@ -77,8 +77,6 @@ bool isSafeArbLocaleTag(String input) {
   // Leading dot is invalid for filenames. Slash/backslash checks are
   // redundant because `isValidLocaleTag` already rejects those characters.
   if (tag.startsWith('.')) return false;
-  // disallow dot characters in tag (prevents trailing dot in filenames)
-  if (tag.contains('.')) return false;
   // allow underscore in filenames (Flutter convention), in addition to hyphen
   if (tag.contains(RegExp(r'[^A-Za-z0-9_\-]'))) return false;
   if (tag.contains('--')) return false;
