@@ -20,7 +20,7 @@ dev_dependencies:
 
 ```bash
 dart pub get
-dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
 補足:

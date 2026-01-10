@@ -8,10 +8,19 @@ This file contains sample data used for testing and verifying the behavior of th
 
 ## Contents
 
+### Sheet1
+
 |key|en|ja|zh|zh_TW|zh-Hant-HK|description|備考|
 |:--|:--|:--|:--|:--|:--|:--|:--|
 |hello|Hello|こんにちは|你好|你好|你好|the text 'Hello'|こんにちはの文言|
 |bye|Goodbye|さようなら|再见|再見|再見|the text 'Goodbye'|さようならの文言|
+
+### Sheet2
+
+|key|ja|fr|
+|:--|:--|:--|
+|hello|こんにちは|Bonjour|
+|bye|さようなら|Au revoir|
 
 ## Locale column detection rules
 
@@ -35,7 +44,9 @@ This file contains sample data used for testing and verifying the behavior of th
 ## CLI example
 
 ```sh
-dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
-This command reads the sample sheet and writes ARB files to `./lib/l10n` when locale columns are present. The sample sheet itself is a small demo and does not represent production localization data.
+This command reads the specified sheet (`Sheet2`) and writes ARB files to `./lib/l10n` when locale columns are present. If `--sheet-name` is omitted the first sheet in the workbook is used. If a non-existent sheet name is provided the CLI will list available sheets and exit with status code 64.
+
+The sample sheet itself is a small demo and does not represent production localization data.

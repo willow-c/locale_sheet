@@ -8,10 +8,19 @@
 
 ## サンプル内容
 
+### Sheet1
+
 |key|en|ja|zh|zh_TW|zh-Hant-HK|description|備考|
 |:--|:--|:--|:--|:--|:--|:--|:--|
 |hello|Hello|こんにちは|你好|你好|你好|the text 'Hello'|こんにちはの文言|
 |bye|Goodbye|さようなら|再见|再見|再見|the text 'Goodbye'|さようならの文言|
+
+### Sheet2
+
+|key|ja|fr|
+|:--|:--|:--|
+|hello|こんにちは|Bonjour|
+|bye|さようなら|Au revoir|
 
 ## ロケール列の判別ルール
 
@@ -35,7 +44,9 @@
 ## CLI 実行例
 
 ```bash
-dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
+dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
 ```
 
 上記コマンドはサンプルシートを読み込み、ロケール列が存在する場合に ARB ファイルを `./lib/l10n` に出力します（サンプルファイル自体はテスト用の簡易例です）。
+
+例: `--sheet-name Sheet2` を指定すると `Sheet2` を変換対象として読み込みます。
