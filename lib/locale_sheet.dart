@@ -1,10 +1,10 @@
-
 import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:locale_sheet/src/core/parser.dart' show ExcelParser;
 import 'package:locale_sheet/src/exporters/arb_exporter.dart' show ArbExporter;
-import 'package:locale_sheet/src/exporters/exporter.dart' show LocalizationExporter;
+import 'package:locale_sheet/src/exporters/exporter.dart'
+    show LocalizationExporter;
 
 export 'src/cli/cli.dart';
 export 'src/core/model.dart';
@@ -22,9 +22,10 @@ Future<void> convertExcelBytesToArb(
   String outDir, {
   ExcelParser? parser,
   String defaultLocale = 'en',
+  String? sheetName,
 }) async {
   final usedParser = parser ?? ExcelParser();
-  final sheet = usedParser.parse(bytes);
+  final sheet = usedParser.parse(bytes, sheetName: sheetName);
   await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
 }
 
@@ -36,6 +37,7 @@ Future<void> convertExcelToArb({
   ExcelParser? parser,
   LocalizationExporter? exporter,
   String defaultLocale = 'en',
+  String? sheetName,
 }) async {
   final bytes = await io.File(inputPath).readAsBytes();
   final usedExporter = exporter ?? ArbExporter();
@@ -45,5 +47,6 @@ Future<void> convertExcelToArb({
     outDir,
     parser: parser,
     defaultLocale: defaultLocale,
+    sheetName: sheetName,
   );
 }

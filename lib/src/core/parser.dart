@@ -10,13 +10,49 @@ import 'package:locale_sheet/src/core/model_helpers.dart';
 ///   1列目のヘッダは `key` でなければなりません。
 /// - ヘッダの2列目以降はロケールコード（例: `en`, `ja`）です。
 /// - 2行目以降は各行がキーと各ロケールの翻訳を持ちます。
+
+/// Thrown when a requested sheet name is not found.
+class SheetNotFoundException implements Exception {
+  /// Create a [SheetNotFoundException].
+  ///
+  /// [requestedSheet] is the name the caller attempted to open and
+  /// [availableSheets] contains the list of sheets present in the workbook.
+  SheetNotFoundException(this.requestedSheet, this.availableSheets);
+
+  /// The sheet name that was requested.
+  final String requestedSheet;
+
+  /// The list of available sheet names in the workbook.
+  final List<String> availableSheets;
+
+  @override
+  String toString() {
+    final avail = availableSheets.join(', ');
+    return 'Sheet "$requestedSheet" not found. Available sheets: $avail';
+  }
+}
+
+/// Excel XLSX parser.
+///
+/// Provides utilities to parse XLSX byte streams into the internal
+/// `LocalizationSheet` model.
 class ExcelParser {
   /// Parse XLSX bytes and return a [LocalizationSheet].
-  LocalizationSheet parse(Uint8List bytes) {
+  ///
+  /// If [sheetName] is provided, attempts to read that sheet. If not
+  /// provided, uses the first sheet found.
+  LocalizationSheet parse(Uint8List bytes, {String? sheetName}) {
     final excel = Excel.decodeBytes(bytes);
-    // Use the first sheet found
-    final sheetName = excel.tables.keys.first;
-    final table = excel.tables[sheetName]!;
+    final selectedSheetName = sheetName ?? excel.tables.keys.first;
+
+    if (!excel.tables.containsKey(selectedSheetName)) {
+      throw SheetNotFoundException(
+        selectedSheetName,
+        excel.tables.keys.toList(),
+      );
+    }
+
+    final table = excel.tables[selectedSheetName]!;
 
     final rows = table.rows;
     final maxRows = rows.length;

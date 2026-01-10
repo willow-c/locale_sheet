@@ -40,6 +40,10 @@ class ExportCommand extends Command<int> {
         help:
             'Default locale to be used as the default language. '
             'If omitted, uses "en" if present or the first locale column.',
+      )
+      ..addOption(
+        'sheet-name',
+        help: '変換するシート名。指定しない場合は最初のシートを使用します。',
       );
   }
 
@@ -82,7 +86,17 @@ class ExportCommand extends Command<int> {
 
     try {
       final bytes = await File(inputPath).readAsBytes();
-      final sheet = parser.parse(bytes);
+      final sheetName = argResults['sheet-name'] as String?;
+      LocalizationSheet sheet;
+      try {
+        sheet = parser.parse(bytes, sheetName: sheetName);
+      } on SheetNotFoundException catch (e) {
+        final available = e.availableSheets.join(', ');
+        logger.error(
+          '指定したシート "${e.requestedSheet}" が見つかりません。利用可能なシート: $available',
+        );
+        return 64;
+      }
       final userProvidedDefault = argResults.wasParsed('default-locale');
       String defaultLocale;
       if (userProvidedDefault) {

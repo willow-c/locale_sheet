@@ -64,6 +64,7 @@ void main() async {
   - `--format`: 出力形式（`arb`）
   - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
   - `--default-locale` / `-d`: デフォルト言語とするロケールを指定します。指定したロケールがシートに存在しない場合は終了コード `64` でエラー終了します。未指定時はシートに `en` があれば `en` を使い、なければ最初のロケール列を使用します。
+  - `--sheet-name`: 変換するシート名を指定します。省略した場合はファイル内の最初のシートを使用します。シート名は大文字小文字を区別します（`Sheet1` と `sheet1` は別扱い）し、単一のシート名のみ指定できます。指定したシートが存在しない場合はパース時にエラーとなり処理は失敗します。全てのエクスポーターで有効です。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter})`
