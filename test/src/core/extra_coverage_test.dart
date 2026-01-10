@@ -72,9 +72,7 @@ void main() {
       await tmp.delete();
 
       expect(res, 64);
-      expect(logger.errors.first, contains('サポートされていないフォーマット'));
+      expect(logger.errors.first, contains('Unsupported format'));
     },
   );
 }
-
-// Use shared TestLogger from test/test_helpers/logger.dart

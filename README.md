@@ -82,6 +82,13 @@ See the `example/` directory for sample XLSX files and example usage.
 - `64` — argument error / UsageException
 - `1` — runtime error (file I/O, parsing errors, etc.)
 
+## Troubleshooting (quick)
+
+- If you see `Failed to parse arguments.`: check that required options (e.g. `--input`) are provided and correctly spelled.
+- If you see `Unsupported format: <format>`: ensure `--format` is one of the supported formats (default: `arb`).
+- If you see `Specified sheet "<name>" not found.`: verify the sheet name (case-sensitive) and list available sheets with a quick inspect of the XLSX.
+- If you see `An error occurred: <details>`: run the command again with a valid input file and check file permissions.
+
 ## Testing & Coverage
 
 Run unit tests with:

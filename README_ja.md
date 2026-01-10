@@ -82,6 +82,13 @@ void main() async {
 - `64` — 引数エラー / UsageException
 - `1` — 実行時エラー（ファイル I/O やパースエラーなど）
 
+## トラブルシューティング（簡易）
+
+- `Failed to parse arguments.` が表示された場合は、必須オプション（例: `--input`）が正しく指定されているか確認してください。
+- `Unsupported format: <format>` が表示された場合は、`--format` にサポートされた値（デフォルト: `arb`）を指定してください。
+- `Specified sheet "<name>" not found.` が表示された場合は、シート名が大文字小文字を含めて正しいか、XLSX 内のシート一覧を確認してください。
+- `An error occurred: <details>` が表示された場合は、有効な入力ファイルで再実行し、ファイル権限やパスを確認してください。
+
 ## Testing & Coverage
 
 開発向けのテストは下記で実行します:
