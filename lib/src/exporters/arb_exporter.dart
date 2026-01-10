@@ -21,6 +21,16 @@ class ArbExporter implements LocalizationExporter {
     // and `defaultLocale` is provided, fall back to the default locale's
     // translation when available.
     for (final locale in sheet.locales) {
+      // Normalize and validate locale tag early to fail fast and avoid
+      // building ARB content for invalid tags.
+      final tag = normalizeLocaleTag(locale);
+      if (!isSafeArbLocaleTag(tag)) {
+        throw FormatException(
+          'Locale tag "$locale" is not valid for ARB filename',
+        );
+      }
+      final fileLocaleTag = tag.replaceAll('-', '_');
+
       final arb = <String, dynamic>{};
       for (final entry in sheet.entries) {
         var value = entry.translations[locale];
@@ -31,9 +41,7 @@ class ArbExporter implements LocalizationExporter {
           arb[entry.key] = value;
         }
       }
-      final tag = normalizeLocaleTag(locale);
       // Use underscore-separated tag for ARB @@locale to match filename.
-      final fileLocaleTag = tag.replaceAll('-', '_');
       arb['@@locale'] = fileLocaleTag;
 
       // Sort keys for stable output; keep @@locale at the end.
@@ -44,11 +52,6 @@ class ArbExporter implements LocalizationExporter {
       }
       sorted['@@locale'] = arb['@@locale'];
 
-      if (!isSafeArbLocaleTag(tag)) {
-        throw FormatException(
-          'Locale tag "$locale" is not valid for ARB filename',
-        );
-      }
       // For ARB filenames follow Flutter convention: use underscores.
       final fileName = 'app_$fileLocaleTag.arb';
       final file = File('${dir.path}/$fileName');
