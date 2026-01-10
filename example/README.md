@@ -25,9 +25,7 @@ This file contains sample data used for testing and verifying the behavior of th
   - `app_en.arb`
   - `app_zh_TW.arb`
   - `app_zh_Hant_HK.arb`
-- The `@@locale` field in each generated ARB uses the normalized locale tag (underscores, matching
-- the ARB filename), not the raw header string. For example, a header `zh-Hant-HK` will appear as
-- `zh_Hant_HK` in `@@locale`.
+- The `@@locale` field in each generated ARB uses the normalized locale tag (with underscores, matching the ARB filename), not the raw header string.
 - Tags that would create invalid filenames on Windows (reserved names such as `CON`, `PRN`, `AUX`, `NUL`, `COM1`, etc., or names ending with a space or dot) are rejected by the exporter.
 
 ## `key` column
@@ -40,6 +38,4 @@ This file contains sample data used for testing and verifying the behavior of th
 dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --default-locale en
 ```
 
-This command reads the sample sheet and writes ARB files to `./lib/l10n`
-when locale columns are present. The sample sheet itself is a small demo
-and does not represent production localization data.
+This command reads the sample sheet and writes ARB files to `./lib/l10n` when locale columns are present. The sample sheet itself is a small demo and does not represent production localization data.
