@@ -56,7 +56,8 @@ void main() {
     final normalizedFile = File('$outDir/app_zh_Hant_TW.arb');
     expect(normalizedFile.existsSync(), isTrue);
     final content = normalizedFile.readAsStringSync();
-    // Ensure @@locale in the content matches the locale tag used in sheet.locales.
+    // Ensure @@locale in the content matches the locale tag
+    // used in sheet.locales.
     expect(content.contains('"@@locale"'), isTrue);
     expect(content.contains('zh_Hant_TW'), isTrue);
     tmp.deleteSync(recursive: true);
