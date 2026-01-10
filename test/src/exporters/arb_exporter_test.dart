@@ -75,7 +75,7 @@ void main() {
     final outDir = '${tmp.path}/out';
     final exporter = ArbExporter();
     // Act & Assert
-    expect(() async => exporter.export(sheet, outDir), throwsFormatException);
+    expect(exporter.export(sheet, outDir), throwsFormatException);
     tmp.deleteSync(recursive: true);
   });
 
@@ -92,7 +92,7 @@ void main() {
     final outDir = '${tmp.path}/out';
     final exporter = ArbExporter();
     // Act & Assert
-    expect(() => exporter.export(sheet, outDir), throwsFormatException);
+    expect(exporter.export(sheet, outDir), throwsFormatException);
     tmp.deleteSync(recursive: true);
   });
 
