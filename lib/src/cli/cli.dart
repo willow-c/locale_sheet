@@ -39,12 +39,14 @@ class ExportCommand extends Command<int> {
         abbr: 'd',
         help:
             'Default locale to be used as the default language. '
-            'If omitted, uses "en" if present or the first locale column.',
+            'If omitted, uses "en" if present or the first '
+            'locale column.',
       )
       ..addOption(
         'sheet-name',
         help:
-            'Name of the sheet to convert. If omitted, the first sheet in the workbook is used.',
+            'Name of the sheet to convert. '
+            'If omitted, the first sheet in the workbook is used.',
       );
   }
 
@@ -95,8 +97,10 @@ class ExportCommand extends Command<int> {
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
         logger.error(
-          '指定したシート "${e.requestedSheet}" が見つかりません。利用可能なシート: $available',
+          '指定したシート "${e.requestedSheet}" が見つかりません。'
+          ' 利用可能なシート: $available',
         );
+
         return 64;
       }
       final userProvidedDefault = argResults.wasParsed('default-locale');

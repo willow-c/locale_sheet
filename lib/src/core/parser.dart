@@ -37,13 +37,29 @@ class SheetNotFoundException implements Exception {
 /// Provides utilities to parse XLSX byte streams into the internal
 /// `LocalizationSheet` model.
 class ExcelParser {
+  /// Create a new [ExcelParser].
+  ///
+  /// An optional [decoder] can be provided for testing to override the
+  /// default `Excel.decodeBytes` behavior.
+  ExcelParser({Excel Function(Uint8List)? decoder})
+    : _decoder = decoder ?? Excel.decodeBytes;
+
+  final Excel Function(Uint8List) _decoder;
+
   /// Parse XLSX bytes and return a [LocalizationSheet].
   ///
   /// If [sheetName] is provided, attempts to read that sheet. If not
   /// provided, uses the first sheet found.
   LocalizationSheet parse(Uint8List bytes, {String? sheetName}) {
-    final excel = Excel.decodeBytes(bytes);
-    final selectedSheetName = sheetName ?? excel.tables.keys.first;
+    final excel = _decoder(bytes);
+    final selectedSheetName =
+        sheetName ??
+        (excel.tables.keys.isNotEmpty
+            ? excel.tables.keys.first
+            : (throw SheetNotFoundException(
+                '(first sheet)',
+                excel.tables.keys.toList(),
+              )));
 
     if (!excel.tables.containsKey(selectedSheetName)) {
       throw SheetNotFoundException(

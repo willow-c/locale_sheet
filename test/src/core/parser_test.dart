@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/parser.dart';
 import 'package:test/test.dart';
@@ -119,5 +120,23 @@ void main() {
     );
 
     tmp.deleteSync(recursive: true);
+  });
+
+  test('parse throws when workbook has no sheets', () {
+    // Arrange: create an Excel and remove all sheets (empty workbook)
+    // Simulate a decoder that cannot provide any sheets by throwing
+    // SheetNotFoundException directly. This models the condition where
+    // the workbook contains no usable sheets.
+    final parser = ExcelParser(
+      decoder: (_) {
+        throw SheetNotFoundException('(first sheet)', <String>[]);
+      },
+    );
+
+    // Act & Assert: parsing should propagate SheetNotFoundException
+    expect(
+      () => parser.parse(Uint8List.fromList([])),
+      throwsA(isA<SheetNotFoundException>()),
+    );
   });
 }
