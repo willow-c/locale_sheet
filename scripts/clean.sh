@@ -7,6 +7,17 @@ cd "$ROOT_DIR"
 
 echo "[locale_sheet] cleaning generated/test files..."
 
+echo "[locale_sheet] running Flutter clean (fvm/flutter if available)"
+if command -v fvm >/dev/null 2>&1; then
+	echo "[locale_sheet] running: fvm flutter clean"
+	fvm flutter clean || true
+elif command -v flutter >/dev/null 2>&1; then
+	echo "[locale_sheet] running: flutter clean"
+	flutter clean || true
+else
+	echo "[locale_sheet] flutter が見つかりません (skipping flutter clean)"
+fi
+
 # カバレッジ・テスト生成物
 rm -rf coverage/
 rm -rf .dart_tool/
