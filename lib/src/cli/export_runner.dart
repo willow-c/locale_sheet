@@ -73,8 +73,8 @@ class ExportRunner {
           sheetName: sheetName,
           descriptionHeader: descriptionHeader,
         );
-        final effectiveSheetName = sheetName ??
-            _determineEffectiveSheetName(sheetListResult);
+        final effectiveSheetName =
+            sheetName ?? _determineEffectiveSheetName(sheetListResult);
         effectiveLogger.infoSheetLocales(effectiveSheetName, sheet.locales);
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
@@ -173,9 +173,12 @@ class ExportRunner {
   /// Determine the effective sheet name for logging purposes.
   ///
   /// Returns a descriptive string based on the result of listing sheets:
-  /// - If sheets were listed successfully and at least one exists, returns the first sheet name
-  /// - If sheets were listed successfully but none exist, returns '(workbook has no sheets)'
-  /// - If listing sheets failed, returns '(failed to list sheets)'
+  /// - If sheets were listed successfully and at least one exists,
+  ///   returns the first sheet name.
+  /// - If sheets were listed successfully but none exist,
+  ///   returns '(workbook has no sheets)'.
+  /// - If listing sheets failed,
+  ///   returns '(failed to list sheets)'.
   String _determineEffectiveSheetName(
     ({List<String> sheets, bool failed}) sheetListResult,
   ) {
