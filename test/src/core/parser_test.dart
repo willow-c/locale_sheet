@@ -288,4 +288,39 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+
+  test('parse throws when descriptionHeader is key (invalid)', () {
+    // Arrange
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([TextCellValue('key'), TextCellValue('en')]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Hello'),
+    ]);
+
+    final bytes = excel.encode()!;
+    final tmp = Directory.systemTemp.createTempSync('parser_desc_key');
+    final file = File('${tmp.path}/desc_key.xlsx')..writeAsBytesSync(bytes);
+    final parser = ExcelParser();
+
+    try {
+      // Act & Assert:
+      // specifying 'key' (case-insensitive) as description header is invalid
+      expect(
+        () => parser.parse(
+          file.readAsBytesSync(),
+          descriptionHeader: 'key',
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            "Description header cannot be 'key'",
+          ),
+        ),
+      );
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
 }

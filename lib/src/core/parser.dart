@@ -103,6 +103,12 @@ class ExcelParser {
     // excluded from the locale columns.
     int? descriptionColIndex;
     if (descriptionHeader != null) {
+      // Prevent users from accidentally specifying the `key` column as the
+      // description column. The first header cell must be `key`, so treating
+      // it as a description column would be a user error.
+      if (descriptionHeader.trim().toLowerCase() == 'key') {
+        throw const FormatException("Description header cannot be 'key'");
+      }
       for (var c = 0; c < header.length; c++) {
         if (header[c].trim() == descriptionHeader.trim()) {
           descriptionColIndex = c;
