@@ -110,7 +110,8 @@ class ExcelParser {
         throw const FormatException("Description header cannot be 'key'");
       }
       for (var c = 0; c < header.length; c++) {
-        if (header[c].trim() == descriptionHeader.trim()) {
+        if (header[c].trim().toLowerCase() ==
+            descriptionHeader.trim().toLowerCase()) {
           descriptionColIndex = c;
           break;
         }

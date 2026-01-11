@@ -259,6 +259,46 @@ void main() {
     }
   });
 
+  test('parse is case-insensitive for descriptionHeader matching', () {
+    // Arrange: header contains 'description' lowercase,
+    // caller passes 'Description'
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+      TextCellValue('description'),
+      TextCellValue('ja'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Hello'),
+      TextCellValue('A friendly greeting'),
+      TextCellValue('こんにちは'),
+    ]);
+
+    final bytes = excel.encode()!;
+    final tmp = Directory.systemTemp.createTempSync('parser_desc_case');
+    final file = File('${tmp.path}/desc_case.xlsx')..writeAsBytesSync(bytes);
+    final parser = ExcelParser();
+
+    try {
+      // Act: pass descriptionHeader with different casing
+      final sheet = parser.parse(
+        file.readAsBytesSync(),
+        descriptionHeader: 'Description',
+      );
+
+      // Assert
+      expect(sheet.locales, equals(['en', 'ja']));
+      expect(sheet.entries.length, equals(1));
+      final e = sheet.entries.first;
+      expect(e.key, equals('greeting'));
+      expect(e.description, equals('A friendly greeting'));
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
+
   test('parse throws when provided descriptionHeader not found', () {
     // Arrange
     final excel = Excel.createExcel();
