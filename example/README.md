@@ -52,4 +52,4 @@ dart run locale_sheet export --input example/sample.xlsx --format arb --out ./li
 - Output directory: `./lib/l10n`
 - Target sheet: `Sheet1`
 - Default locale: `en`
-- Decription header: `description`
+- Description header: `description`
