@@ -108,7 +108,7 @@ class SimpleLogger implements Logger {
 
   @override
   void infoErrorResult(String message) {
-    stdout.writeln(
+    stderr.writeln(
       '${_c(_cyan, 'Result:')} ${_c(_red, 'Error - $message')}',
     );
   }
