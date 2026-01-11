@@ -78,7 +78,8 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
     - ヘッダが見つかると、その列の各行の値が対応するキーの説明となります。
     - 説明用に指定した列はロケール列の判定対象から除外されます。
     - 指定したヘッダが見つからなかった場合はエラーで終了します。
-    - 説明はデフォルトロケールの ARB のみ `@<key>` メタデータとして出力されます。デフォルトロケールの ARB には常に `@<key>` オブジェクトが出力され（説明が無ければ空オブジェクト `{}` になります）、非デフォルトロケールの ARB には `@<key>` は含まれません。
+    - 説明は有効なデフォルトロケールの ARB のみ `@<key>` メタデータとして出力されます。デフォルトロケールの ARB には各エントリに対して `@<key>` オブジェクトが出力されます（説明が無ければ空オブジェクト `{}` になります）。
+      ライブラリのヘルパー等で `defaultLocale` のデフォルト値（例: `defaultLocale = 'en'`）に頼る場合、シートに `en` 列が存在すれば `en` に対してメタデータが出力されますが、`en` が存在しない場合は実際に選択された有効なデフォルト（たとえば最初のロケール列）がメタデータ出力の対象になります。非デフォルトロケールの ARB には `@<key>` は含まれません。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`

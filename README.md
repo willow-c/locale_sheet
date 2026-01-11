@@ -79,7 +79,8 @@
     - When the header is found, that column is read and each row's value becomes the `description` for the corresponding key.
     - The description column is excluded from the locale columns when detecting locales.
     - If the specified header text is not found, the command exits with an error.
-    - Descriptions are emitted only into the default locale's ARB file as `@<key>` metadata. For the default locale an `@<key>` object is always emitted (it will be empty if no description is present). Non-default locale ARB files do not include `@<key>` metadata.
+    - Descriptions are emitted only into the effective default locale's ARB file as `@<key>` metadata. An `@<key>` object is emitted for each entry in that default-locale ARB file (it will be empty if no description is present).
+      When you rely on the default `defaultLocale` value (for example, `defaultLocale = 'en'` in the library helpers), metadata is emitted for `en` only if a locale column named `en` exists; otherwise the locale column selected as the effective default (such as the first locale column when `en` is absent) is the one that receives the `@<key>` metadata. Non-default locale ARB files do not include `@<key>` metadata.
 
 - Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`
