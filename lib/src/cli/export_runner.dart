@@ -55,7 +55,7 @@ class ExportRunner {
     try {
       final bytes = await File(inputPath).readAsBytes();
 
-      final availableSheets = _listAvailableSheets(
+      final sheetListResult = _listAvailableSheets(
         bytes,
         parser,
         effectiveLogger,
@@ -73,9 +73,8 @@ class ExportRunner {
           sheetName: sheetName,
           descriptionHeader: descriptionHeader,
         );
-        final effectiveSheetName =
-            sheetName ??
-            (availableSheets.isNotEmpty ? availableSheets.first : '(unknown)');
+        final effectiveSheetName = sheetName ??
+            _determineEffectiveSheetName(sheetListResult);
         effectiveLogger.infoSheetLocales(effectiveSheetName, sheet.locales);
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
@@ -153,7 +152,11 @@ class ExportRunner {
       });
   }
 
-  List<String> _listAvailableSheets(
+  /// Result of attempting to list available sheets.
+  ///
+  /// Contains the list of sheet names and a flag indicating whether
+  /// the operation succeeded or failed.
+  ({List<String> sheets, bool failed}) _listAvailableSheets(
     Uint8List bytes,
     ExcelParser parser,
     Logger effectiveLogger,
@@ -161,10 +164,28 @@ class ExportRunner {
     try {
       final sheets = parser.getSheetNames(bytes);
       effectiveLogger.infoAvailableSheets(sheets);
-      return sheets;
+      return (sheets: sheets, failed: false);
     } on Object catch (_) {
-      return <String>[];
+      return (sheets: <String>[], failed: true);
     }
+  }
+
+  /// Determine the effective sheet name for logging purposes.
+  ///
+  /// Returns a descriptive string based on the result of listing sheets:
+  /// - If sheets were listed successfully and at least one exists, returns the first sheet name
+  /// - If sheets were listed successfully but none exist, returns '(workbook has no sheets)'
+  /// - If listing sheets failed, returns '(failed to list sheets)'
+  String _determineEffectiveSheetName(
+    ({List<String> sheets, bool failed}) sheetListResult,
+  ) {
+    if (sheetListResult.failed) {
+      return '(failed to list sheets)';
+    }
+    if (sheetListResult.sheets.isEmpty) {
+      return '(workbook has no sheets)';
+    }
+    return sheetListResult.sheets.first;
   }
 
   String? _determineDefaultLocale(
