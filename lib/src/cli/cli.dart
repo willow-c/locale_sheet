@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:args/command_runner.dart';
-
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/export_runner.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
 
 /// ローカライズファイルをエクスポートするための CLI コマンド。
@@ -55,6 +53,11 @@ class ExportCommand extends Command<int> {
             'If provided, the parser will search the first row for this text. '
             'Found column will be used as the per-key description; if not '
             'found the command will fail.',
+      )
+      ..addFlag(
+        'color',
+        defaultsTo: true,
+        help: 'Enable color output in logs.',
       );
   }
 
@@ -86,71 +89,12 @@ class ExportCommand extends Command<int> {
       return 64;
     }
 
-    final inputPath = argResults['input'] as String;
-    final format = argResults['format'] as String;
-    final outDir = argResults['out'] as String;
+    final runner = ExportRunner(
+      logger: logger,
+      parser: parser,
+      exporters: _exporters,
+    );
 
-    // (No verbose logging by default)
-
-    final exporter = _exporters[format];
-    if (exporter == null) {
-      logger.error('Unsupported format: $format');
-      return 64;
-    }
-
-    try {
-      final bytes = await File(inputPath).readAsBytes();
-      // (No verbose logging by default)
-      final sheetName = argResults['sheet-name'] as String?;
-      final descriptionHeader = argResults.wasParsed('description-header')
-          ? (argResults['description-header'] as String?)
-          : null;
-      LocalizationSheet sheet;
-      try {
-        sheet = parser.parse(
-          bytes,
-          sheetName: sheetName,
-          descriptionHeader: descriptionHeader,
-        );
-        // proceed without emitting sheet-locales info by default
-      } on SheetNotFoundException catch (e) {
-        final available = e.availableSheets.join(', ');
-        logger.error(
-          'Specified sheet "${e.requestedSheet}" not found. '
-          'Available sheets: $available',
-        );
-
-        return 64;
-      }
-      final userProvidedDefault = argResults.wasParsed('default-locale');
-      String defaultLocale;
-      if (userProvidedDefault) {
-        final requested = argResults['default-locale'] as String?;
-        if (requested == null || !sheet.locales.contains(requested)) {
-          final localesList = sheet.locales.join(', ');
-          final message =
-              'Specified default-locale "${requested ?? ''}" not found '
-              'in the sheet locales: $localesList';
-          logger.error(message);
-          return 64;
-        }
-        defaultLocale = requested;
-      } else {
-        if (sheet.locales.contains('en')) {
-          defaultLocale = 'en';
-        } else if (sheet.locales.isNotEmpty) {
-          defaultLocale = sheet.locales.first;
-        } else {
-          defaultLocale = 'en';
-        }
-      }
-
-      await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
-      logger.info('"$format" format successfully written to $outDir.');
-      return 0;
-    } on Exception catch (e) {
-      logger.error('An error occurred: $e');
-      return 1;
-    }
+    return runner.run(argResults);
   }
 }

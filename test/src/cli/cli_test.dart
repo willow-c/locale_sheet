@@ -1,18 +1,7 @@
 import 'package:args/command_runner.dart';
 import 'package:locale_sheet/src/cli/cli.dart';
-import 'package:locale_sheet/src/cli/logger.dart';
 import 'package:test/test.dart';
-
-class TestLogger implements Logger {
-  final infos = <String>[];
-  final errors = <String>[];
-
-  @override
-  void info(String message) => infos.add(message);
-
-  @override
-  void error(String message) => errors.add(message);
-}
+import '../../test_helpers/logger.dart';
 
 void main() {
   group('ExportCommand', () {
