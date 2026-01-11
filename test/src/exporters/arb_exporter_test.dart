@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:locale_sheet/src/core/model.dart';
 import 'package:locale_sheet/src/exporters/arb_exporter.dart';
@@ -190,8 +191,22 @@ void main() {
       final enFile = File('$outDir/app_en.arb');
       expect(enFile.existsSync(), isTrue);
       final content = enFile.readAsStringSync();
-      expect(content.contains('@hello'), isTrue);
-      expect(content.contains('"@hello"'), isTrue);
+
+      // Parse the ARB as JSON to verify structure and ordering
+      final obj = jsonDecode(content) as Map<String, dynamic>;
+      expect(obj.containsKey('hello'), isTrue);
+      expect(obj.containsKey('@hello'), isTrue);
+
+      // Verify metadata object is immediately before the translation key
+      final keys = obj.keys.toList();
+      final metaIndex = keys.indexOf('@hello');
+      final keyIndex = keys.indexOf('hello');
+      expect(metaIndex, greaterThanOrEqualTo(0));
+      expect(keyIndex, greaterThanOrEqualTo(0));
+      expect(metaIndex, equals(keyIndex - 1));
+
+      // Metadata should be a JSON object (may be empty)
+      expect(obj['@hello'], isA<Map<String, dynamic>>());
     } finally {
       tmp.deleteSync(recursive: true);
     }
@@ -214,9 +229,20 @@ void main() {
       final enFile = File('$outDir/app_en.arb');
       expect(enFile.existsSync(), isTrue);
       final content = enFile.readAsStringSync();
-      expect(content.contains('"@bye"'), isTrue);
-      expect(content.contains('"description"'), isTrue);
-      expect(content.contains('Farewell'), isTrue);
+
+      // Parse to JSON and assert metadata includes description and ordering
+      final obj = jsonDecode(content) as Map<String, dynamic>;
+      expect(obj.containsKey('bye'), isTrue);
+      expect(obj.containsKey('@bye'), isTrue);
+
+      final keys = obj.keys.toList();
+      final metaIndex = keys.indexOf('@bye');
+      final keyIndex = keys.indexOf('bye');
+      expect(metaIndex, equals(keyIndex - 1));
+
+      final meta = obj['@bye'] as Map<String, dynamic>;
+      expect(meta, isA<Map<String, dynamic>>());
+      expect(meta['description'], equals('Farewell'));
     } finally {
       tmp.deleteSync(recursive: true);
     }
