@@ -20,7 +20,7 @@
 
     ```bash
     dart pub get
-    dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
+    dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en --description-header description
     ```
 
     Notes:
@@ -39,15 +39,25 @@
         ..addCommand(ExportCommand());
 
       // Programmatic invocation (with default-locale):
-      await runner.run([
-        'export',
-        '--input',
-        'path/to/file.xlsx',
-        '--out',
-        './lib/l10n',
-        '--default-locale',
-        'en',
-      ]);
+        await runner.run([
+          'export',
+          '--input',
+          'path/to/file.xlsx',
+          '--out',
+          './lib/l10n',
+          '--default-locale',
+          'en',
+          '--description-header',
+          'description',
+        ]);
+
+      // Alternatively, call the library helper directly and pass the
+      // optional `descriptionHeader` argument:
+      // await convertExcelToArb(
+      //   inputPath: 'path/to/file.xlsx',
+      //   outDir: './lib/l10n',
+      //   descriptionHeader: 'description',
+      // );
     }
     ```
 
@@ -65,6 +75,11 @@
   - `--out` / `-o`: Output directory (default: `.`)
   - `--default-locale` / `-d`: Specifies the locale to be used as the default language. If specified and the locale is not present in the sheet, the command exits with code `64`. If omitted, the CLI uses `en` if present, otherwise the first locale column.
   - `--sheet-name`: Specifies the name of the sheet to convert. If omitted, the first sheet in the file is used. Sheet names are case-sensitive (`Sheet1` and `sheet1` are treated as different sheets) and only a single sheet name may be provided. If the specified sheet does not exist, parsing will fail and the command will exit with an error. This option is honored by all exporters.
+  - `--description-header`: Header text to locate the description column in the first row of the sheet. If provided, the CLI searches the first row for this exact header text and uses the matching column as the per-key description source. Behavior summary:
+    - When the header is found, that column is read and each row's value becomes the `description` for the corresponding key.
+    - The description column is excluded from the locale columns when detecting locales.
+    - If the specified header text is not found, the command exits with an error.
+    - Descriptions are emitted only into the default locale's ARB file as `@<key>` metadata. For the default locale an `@<key>` object is always emitted (it will be empty if no description is present). Non-default locale ARB files do not include `@<key>` metadata.
 
 - Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`

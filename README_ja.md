@@ -20,7 +20,7 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
 
     ```bash
     dart pub get
-    dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
+    dart run locale_sheet export --input ./example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en --description-header description
     ```
 
     補足:
@@ -39,15 +39,24 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
         ..addCommand(ExportCommand());
 
       // Programmatic 実行（default-locale 指定例）:
-      await runner.run([
-        'export',
-        '--input',
-        'path/to/file.xlsx',
-        '--out',
-        './lib/l10n',
-        '--default-locale',
-        'en',
-      ]);
+        await runner.run([
+          'export',
+          '--input',
+          'path/to/file.xlsx',
+          '--out',
+          './lib/l10n',
+          '--default-locale',
+          'en',
+          '--description-header',
+          'description',
+        ]);
+
+      // またはライブラリ関数を直接呼び出して、`descriptionHeader` を渡すこともできます:
+      // await convertExcelToArb(
+      //   inputPath: 'path/to/file.xlsx',
+      //   outDir: './lib/l10n',
+      //   descriptionHeader: 'description',
+      // );
     }
     ```
 
@@ -65,6 +74,11 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
   - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
   - `--default-locale` / `-d`: デフォルト言語とするロケールを指定します。指定したロケールがシートに存在しない場合は終了コード `64` でエラー終了します。未指定時はシートに `en` があれば `en` を使い、なければ最初のロケール列を使用します。
   - `--sheet-name`: 変換するシート名を指定します。省略した場合はファイル内の最初のシートを使用します。シート名は大文字小文字を区別します（`Sheet1` と `sheet1` は別扱い）し、単一のシート名のみ指定できます。指定したシートが存在しない場合はパース時にエラーとなり処理は失敗します。全てのエクスポーターで有効です。
+  - `--description-header`: シートの1行目（ヘッダ）から説明文列を判定するためのヘッダ文字列を指定します。指定された場合、CLI は1行目を検索して一致する列を各キーの `description` として読み取ります。振る舞いの要約:
+    - ヘッダが見つかると、その列の各行の値が対応するキーの説明となります。
+    - 説明用に指定した列はロケール列の判定対象から除外されます。
+    - 指定したヘッダが見つからなかった場合はエラーで終了します。
+    - 説明はデフォルトロケールの ARB のみ `@<key>` メタデータとして出力されます。デフォルトロケールの ARB には常に `@<key>` オブジェクトが出力され（説明が無ければ空オブジェクト `{}` になります）、非デフォルトロケールの ARB には `@<key>` は含まれません。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`

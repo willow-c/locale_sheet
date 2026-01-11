@@ -17,13 +17,15 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('parser_null_cell');
     final file = File('${tmp.path}/nullcell.xlsx')..writeAsBytesSync(bytes!);
 
-    final parser = ExcelParser();
-    final sheetModel = parser.parse(file.readAsBytesSync());
-    expect(sheetModel.locales, contains('en'));
-    expect(sheetModel.entries.length, 1);
-    expect(sheetModel.entries.first.translations['en'], isNull);
-
-    tmp.deleteSync(recursive: true);
+    try {
+      final parser = ExcelParser();
+      final sheetModel = parser.parse(file.readAsBytesSync());
+      expect(sheetModel.locales, contains('en'));
+      expect(sheetModel.entries.length, 1);
+      expect(sheetModel.entries.first.translations['en'], isNull);
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
   });
 
   test('LocalizationEntry.fromMap handles non-map translations gracefully', () {
@@ -68,11 +70,14 @@ void main() {
         ..addCommand(cmd);
 
       final tmp = File('test/tmp_missing_exporter.xlsx')..writeAsBytesSync([0]);
-      final res = await runner.run(['export', '--input', tmp.path]);
-      await tmp.delete();
+      try {
+        final res = await runner.run(['export', '--input', tmp.path]);
 
-      expect(res, 64);
-      expect(logger.errors.first, contains('Unsupported format'));
+        expect(res, 64);
+        expect(logger.errors.first, contains('Unsupported format'));
+      } finally {
+        await tmp.delete();
+      }
     },
   );
 }
