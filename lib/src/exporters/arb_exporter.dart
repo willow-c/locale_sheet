@@ -7,6 +7,18 @@ import 'package:locale_sheet/src/exporters/exporter.dart';
 
 /// ARB エクスポーターの実装。
 class ArbExporter implements LocalizationExporter {
+  /// Export ARB files for each locale contained in [sheet].
+  ///
+  /// Metadata emission notes:
+  /// - Metadata (`@<key>` objects with `description`) are only emitted when
+  ///   an explicit `defaultLocale` is provided to this method.
+  /// - When `defaultLocale` is specified, metadata objects are emitted only
+  ///   into the ARB file for the locale that matches `defaultLocale`.
+  /// - If `defaultLocale` is `null`, no `@<key>` metadata objects will be
+  ///   emitted for any locale.
+  ///
+  /// This clarifies that metadata output requires an explicit default locale
+  /// and will not be produced automatically otherwise.
   @override
   Future<void> export(
     LocalizationSheet sheet,
