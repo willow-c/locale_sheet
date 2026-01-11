@@ -64,12 +64,15 @@ class ArbExporter implements LocalizationExporter {
       final keys = arb.keys.where((k) => k != '@@locale').toList()..sort();
       final sorted = <String, dynamic>{};
       for (final k in keys) {
+        // Emit the translation entry first, then emit its @-metadata
+        // for the default locale. This reverses the previous ordering
+        // where metadata was emitted before the translation.
+        sorted[k] = arb[k];
         if (locale == defaultLocale) {
           final metaKey = '@$k';
           final meta = metadata[metaKey];
           if (meta != null) sorted[metaKey] = meta;
         }
-        sorted[k] = arb[k];
       }
       sorted['@@locale'] = arb['@@locale'];
 
