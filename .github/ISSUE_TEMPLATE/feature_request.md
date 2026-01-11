@@ -5,6 +5,8 @@ labels: enhancement
 assignees: ''
 ---
 
+# 機能要望
+
 ## 概要
 
 提案する機能の短い要約を記載してください。
