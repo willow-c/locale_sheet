@@ -397,4 +397,59 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+
+  test('parse treats empty or whitespace description cells as null', () {
+    // Arrange
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+      TextCellValue('description'),
+      TextCellValue('ja'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('g1'),
+      TextCellValue('Hello'),
+      TextCellValue(''),
+      TextCellValue('こんにちは'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('g2'),
+      TextCellValue('Hi'),
+      TextCellValue('   '),
+      TextCellValue('やあ'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('g3'),
+      TextCellValue('Hey'),
+      TextCellValue('A desc'),
+      TextCellValue('やっほ'),
+    ]);
+
+    final bytes = excel.encode()!;
+    final tmp = Directory.systemTemp.createTempSync('parser_desc_empty');
+    final path = '${tmp.path}/desc_empty.xlsx';
+    File(path).writeAsBytesSync(bytes);
+
+    final parser = ExcelParser();
+
+    try {
+      // Act
+      final sheet = parser.parse(
+        File(path).readAsBytesSync(),
+        descriptionHeader: 'description',
+      );
+
+      // Assert: empty or whitespace-only descriptions become null
+      final byKey = {
+        for (final e in sheet.entries) e.key: e,
+      };
+      expect(byKey['g1']!.description, isNull);
+      expect(byKey['g2']!.description, isNull);
+      expect(byKey['g3']!.description, equals('A desc'));
+    } finally {
+      // Cleanup
+      tmp.deleteSync(recursive: true);
+    }
+  });
 }
