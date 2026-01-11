@@ -1,7 +1,12 @@
 # CHANGE LOG
 
-## 0.x.x - 20xx-xx-xx
+## 0.3.0 - 2026-01-11
 
+- feat: enhance CLI logging with color output and structured messages ([#19](https://github.com/willow-c/locale_sheet/pull/19))
+- feat: add description header support in locale_sheet export ([#17](https://github.com/willow-c/locale_sheet/pull/17))
+- chore: update Flutter SDK version to 3.38.6 ([#15](https://github.com/willow-c/locale_sheet/pull/15))
+- docs: fix formatting in README and README_ja for consistency ([#13](https://github.com/willow-c/locale_sheet/pull/13))
+- chore: agents and scripts improvements ([#11](https://github.com/willow-c/locale_sheet/pull/11))
 - chore: standardize CLI/runtime messages to English; update README and tests accordingly ([#10](https://github.com/willow-c/locale_sheet/pull/10))
 
 ## 0.2.0 - 2026-01-10
