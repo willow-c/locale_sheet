@@ -121,6 +121,15 @@ class ExcelParser {
           'Description header "$descriptionHeader" not found in the first row',
         );
       }
+      // Validate that the description column header is not itself a valid
+      // locale tag. If it is, this likely indicates the user intended that
+      // column to be a locale, not a description column, so fail early.
+      final descHeader = header[descriptionColIndex].trim();
+      if (isValidLocaleTag(descHeader)) {
+        throw FormatException(
+          'Description header "$descHeader" conflicts with a locale tag',
+        );
+      }
     }
 
     // Determine which header columns are actually locale IDs.

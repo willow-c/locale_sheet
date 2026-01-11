@@ -363,4 +363,38 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+
+  test('parse throws when descriptionHeader conflicts with locale tag', () {
+    // Arrange: header contains a locale 'fr' and user mistakenly sets
+    // descriptionHeader to 'fr'. This should be rejected.
+    final excel = Excel.createExcel();
+    excel['Sheet1'].appendRow([
+      TextCellValue('key'),
+      TextCellValue('fr'),
+      TextCellValue('en'),
+    ]);
+    excel['Sheet1'].appendRow([
+      TextCellValue('greeting'),
+      TextCellValue('Bonjour'),
+      TextCellValue('Hello'),
+    ]);
+
+    final bytes = excel.encode()!;
+    final tmp = Directory.systemTemp.createTempSync('parser_desc_conflict');
+    final file = File('${tmp.path}/desc_conflict.xlsx')
+      ..writeAsBytesSync(bytes);
+    final parser = ExcelParser();
+
+    try {
+      expect(
+        () => parser.parse(
+          file.readAsBytesSync(),
+          descriptionHeader: 'fr',
+        ),
+        throwsFormatException,
+      );
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
 }
