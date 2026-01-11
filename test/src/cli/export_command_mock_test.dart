@@ -18,6 +18,33 @@ class TestLogger implements Logger {
 
   @override
   void error(String message) => errors.add(message);
+
+  @override
+  void infoOptions(Map<String, Object?> options) {
+    final joined = options.entries.map((e) => '${e.key}=${e.value}').join(', ');
+    infos.add('Options: $joined');
+  }
+
+  @override
+  void infoAvailableSheets(List<String> sheets) {
+    infos.add('Available sheets: ${sheets.join(', ')}');
+  }
+
+  @override
+  void infoSheetLocales(String sheetName, List<String> locales) {
+    infos.add('Sheet: $sheetName; Locales: ${locales.join(', ')}');
+  }
+
+  @override
+  void infoDefaultLocale(String locale) => infos.add('Default locale: $locale');
+
+  @override
+  void infoResult(String format, String outDir) => infos.add(
+    'Result: Success - "$format" format successfully written to $outDir.',
+  );
+
+  @override
+  void infoErrorResult(String message) => infos.add('Result: Error - $message');
 }
 
 class FakeParser extends ExcelParser {
@@ -404,6 +431,56 @@ void main() {
       }
     },
   );
+
+  test(
+    'ExportCommand logs options, available sheets, and sheet locales',
+    () async {
+      final logger = TestLogger();
+
+      final sheet = LocalizationSheet(locales: const ['en', 'ja'], entries: []);
+      final parser = _LoggingFakeParser(sheet);
+      final exporter = _LoggingFakeExporter();
+
+      final cmd = ExportCommand(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+      final runner = CommandRunner<int>('locale_sheet', 'test')
+        ..addCommand(cmd);
+
+      final tmp = File('test/tmp_logging.xlsx');
+      await tmp.writeAsBytes([0]);
+
+      try {
+        final res = await runner.run([
+          'export',
+          '--input',
+          tmp.path,
+          '--out',
+          'outdir',
+        ]);
+
+        expect(res, 0);
+
+        // Check logs
+        final hasOptions = logger.infos.any((s) => s.startsWith('Options:'));
+        final hasSheets = logger.infos.any(
+          (s) => s.startsWith('Available sheets:'),
+        );
+        final hasLocales = logger.infos.any((s) => s.startsWith('Sheet:'));
+
+        expect(hasOptions, isTrue, reason: 'Options not logged');
+        expect(hasSheets, isTrue, reason: 'Available sheets not logged');
+        expect(hasLocales, isTrue, reason: 'Sheet locales not logged');
+
+        // Ensure exporter was invoked with expected outdir
+        expect(exporter.lastOutDir, 'outdir');
+      } finally {
+        await tmp.delete();
+      }
+    },
+  );
 }
 
 class _ThrowingParser extends ExcelParser {
@@ -436,4 +513,38 @@ class _FormatThrowingParser extends ExcelParser {
 
   @override
   List<String> getSheetNames(Uint8List bytes) => <String>[];
+}
+
+class _LoggingFakeParser extends ExcelParser {
+  _LoggingFakeParser(this.sheet);
+  final LocalizationSheet sheet;
+
+  @override
+  LocalizationSheet parse(
+    Uint8List bytes, {
+    String? sheetName,
+    String? descriptionHeader,
+  }) {
+    return sheet;
+  }
+
+  @override
+  List<String> getSheetNames(Uint8List bytes) => <String>['Sheet1', 'Sheet2'];
+}
+
+class _LoggingFakeExporter implements LocalizationExporter {
+  String? lastOutDir;
+  LocalizationSheet? lastSheet;
+  String? lastDefaultLocale;
+
+  @override
+  Future<void> export(
+    LocalizationSheet sheet,
+    String outDir, {
+    String? defaultLocale,
+  }) async {
+    lastSheet = sheet;
+    lastOutDir = outDir;
+    lastDefaultLocale = defaultLocale;
+  }
 }

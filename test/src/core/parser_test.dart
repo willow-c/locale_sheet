@@ -167,6 +167,24 @@ void main() {
     expect(names, contains('Alpha'));
   });
 
+  test('SheetNotFoundException toString contains available sheets', () {
+    // Arrange
+    final excel = Excel.createExcel();
+    final _ = excel['A'];
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act & Assert
+    try {
+      // Act: attempt to parse a non-existent sheet
+      parser.parse(Uint8List(0), sheetName: 'NoSuchSheet');
+      fail('Expected SheetNotFoundException');
+    } on SheetNotFoundException catch (e) {
+      // Assert: message contains requested and available sheet names
+      expect(e.toString(), contains('NoSuchSheet'));
+      expect(e.toString(), contains('A'));
+    }
+  });
+
   test('parse skips empty header columns and detects locales correctly', () {
     final excel = Excel.createExcel();
     excel['Sheet1'].appendRow([
