@@ -83,8 +83,8 @@
       When you rely on the default `defaultLocale` value (for example, `defaultLocale = 'en'` in the library helpers), metadata is emitted for `en` only if a locale column named `en` exists; otherwise the locale column selected as the effective default (such as the first locale column when `en` is absent) is the one that receives the `@<key>` metadata. Non-default locale ARB files do not include `@<key>` metadata.
 
 - Main public API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? descriptionHeader, String? sheetName})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? descriptionHeader, String? sheetName})`
   - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
 
 Both helper functions accept an optional `sheetName` parameter. When provided that sheet name is parsed; when `null` (or omitted) the first sheet in the workbook is used. If the specified sheet is not present a `SheetNotFoundException` is thrown (the CLI prints available sheets and exits with code `64`).

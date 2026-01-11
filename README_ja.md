@@ -82,8 +82,8 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
       ライブラリのヘルパー等で `defaultLocale` のデフォルト値（例: `defaultLocale = 'en'`）に頼る場合、シートに `en` 列が存在すれば `en` に対してメタデータが出力されますが、`en` が存在しない場合は実際に選択された有効なデフォルト（たとえば最初のロケール列）がメタデータ出力の対象になります。非デフォルトロケールの ARB には `@<key>` は含まれません。
 
 - 主な公開 API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? descriptionHeader, String? sheetName})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? descriptionHeader, String? sheetName})`
   - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
 
 両方のヘルパー関数はオプションの `sheetName` 引数を受け取ります。`sheetName` を指定するとその名前のシートが解析され、`null`（省略）ならワークブックの最初のシートが使用されます。指定したシートが存在しない場合は `SheetNotFoundException` が発生します（CLI 実行時は利用可能なシートを表示して終了コード `64` で終了します）。
