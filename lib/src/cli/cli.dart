@@ -1,8 +1,6 @@
-import 'dart:io';
-
 import 'package:args/command_runner.dart';
-
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/export_runner.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
 
 /// ローカライズファイルをエクスポートするための CLI コマンド。
@@ -91,134 +89,12 @@ class ExportCommand extends Command<int> {
       return 64;
     }
 
-    final inputPath = argResults['input'] as String;
-    final format = argResults['format'] as String;
-    final outDir = argResults['out'] as String;
-    final useColor = argResults['color'] as bool? ?? true;
+    final runner = ExportRunner(
+      logger: logger,
+      parser: parser,
+      exporters: _exporters,
+    );
 
-    // If the injected logger is the default `SimpleLogger`, recreate it
-    // with the configured color setting.
-    final effectiveLogger = (logger is SimpleLogger)
-        ? SimpleLogger(color: useColor)
-        : logger;
-
-    // Prepare error emission helper below.
-
-    // Helper to emit error messages once. Avoid duplicate output when the
-    // injected `logger` and the `effectiveLogger` would both write the same
-    // content to the console (for example, two SimpleLogger instances).
-    void emitError(String msg) {
-      if (identical(logger, effectiveLogger)) {
-        // Single logger instance (likely a test logger) — emit only via
-        // `error` so tests that inspect `errors` still observe it.
-        logger.error(msg);
-        return;
-      }
-      if (logger is SimpleLogger && effectiveLogger is SimpleLogger) {
-        // Both are SimpleLogger instances — prefer the structured Result line
-        // to avoid duplicate console output.
-        effectiveLogger.infoErrorResult(msg);
-        return;
-      }
-      // Fallback: emit both for maximum compatibility.
-      logger.error(msg);
-      effectiveLogger.infoErrorResult(msg);
-    }
-
-    // Header with timestamp + command summary
-    final timestamp = DateTime.now().toIso8601String();
-    final cmdSummary =
-        'export --input $inputPath --format $format --out $outDir';
-    effectiveLogger
-      ..info('[INFO] $timestamp  $cmdSummary')
-      ..infoOptions(<String, Object?>{
-        'input': inputPath,
-        'format': format,
-        'out': outDir,
-        'sheet-name': argResults.wasParsed('sheet-name')
-            ? argResults['sheet-name'] as String?
-            : null,
-        'default-locale': argResults.wasParsed('default-locale')
-            ? argResults['default-locale'] as String?
-            : null,
-        'description-header': argResults.wasParsed('description-header')
-            ? argResults['description-header'] as String?
-            : null,
-      });
-
-    final exporter = _exporters[format];
-    if (exporter == null) {
-      final msg = 'Unsupported format: $format';
-      emitError(msg);
-      return 64;
-    }
-
-    try {
-      final bytes = await File(inputPath).readAsBytes();
-      // Log available sheets found in the workbook.
-      var availableSheets = <String>[];
-      try {
-        availableSheets = parser.getSheetNames(bytes);
-        effectiveLogger.infoAvailableSheets(availableSheets);
-      } on Object catch (_) {
-        // ignore listing failure; parsing below will surface errors.
-      }
-      final sheetName = argResults['sheet-name'] as String?;
-      final descriptionHeader = argResults.wasParsed('description-header')
-          ? (argResults['description-header'] as String?)
-          : null;
-      LocalizationSheet sheet;
-      try {
-        sheet = parser.parse(
-          bytes,
-          sheetName: sheetName,
-          descriptionHeader: descriptionHeader,
-        );
-        // Log locales present in the selected sheet.
-        final effectiveSheetName =
-            sheetName ??
-            (availableSheets.isNotEmpty ? availableSheets.first : '(unknown)');
-        effectiveLogger.infoSheetLocales(effectiveSheetName, sheet.locales);
-      } on SheetNotFoundException catch (e) {
-        final available = e.availableSheets.join(', ');
-        final msg =
-            'Specified sheet "${e.requestedSheet}" not found. '
-            'Available sheets: $available';
-        emitError(msg);
-
-        return 64;
-      }
-      final userProvidedDefault = argResults.wasParsed('default-locale');
-      String defaultLocale;
-      if (userProvidedDefault) {
-        final requested = argResults['default-locale'] as String?;
-        if (requested == null || !sheet.locales.contains(requested)) {
-          final localesList = sheet.locales.join(', ');
-          final message =
-              'Specified default-locale "${requested ?? ''}" not found '
-              'in the sheet locales: $localesList';
-          emitError(message);
-          return 64;
-        }
-        defaultLocale = requested;
-      } else {
-        if (sheet.locales.contains('en')) {
-          defaultLocale = 'en';
-        } else if (sheet.locales.isNotEmpty) {
-          defaultLocale = sheet.locales.first;
-        } else {
-          defaultLocale = 'en';
-        }
-      }
-      effectiveLogger.infoDefaultLocale(defaultLocale);
-
-      await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
-      effectiveLogger.infoResult(format, outDir);
-      return 0;
-    } on Exception catch (e) {
-      final msg = 'An error occurred: $e';
-      emitError(msg);
-      return 1;
-    }
+    return runner.run(argResults);
   }
 }
