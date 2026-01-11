@@ -28,9 +28,14 @@ Future<void> convertExcelBytesToArb(
   ExcelParser? parser,
   String defaultLocale = 'en',
   String? sheetName,
+  String? descriptionHeader,
 }) async {
   final usedParser = parser ?? ExcelParser();
-  final sheet = usedParser.parse(bytes, sheetName: sheetName);
+  final sheet = usedParser.parse(
+    bytes,
+    sheetName: sheetName,
+    descriptionHeader: descriptionHeader,
+  );
   await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
 }
 
@@ -48,6 +53,7 @@ Future<void> convertExcelToArb({
   LocalizationExporter? exporter,
   String defaultLocale = 'en',
   String? sheetName,
+  String? descriptionHeader,
 }) async {
   final bytes = await io.File(inputPath).readAsBytes();
   final usedExporter = exporter ?? ArbExporter();
@@ -58,5 +64,6 @@ Future<void> convertExcelToArb({
     parser: parser,
     defaultLocale: defaultLocale,
     sheetName: sheetName,
+    descriptionHeader: descriptionHeader,
   );
 }

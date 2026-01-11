@@ -20,22 +20,26 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('arb_export_test');
     final outDir = '${tmp.path}/out';
     final exporter = ArbExporter();
-    // Act
-    await exporter.export(sheet, outDir);
-    // Assert
-    final enFile = File('$outDir/app_en.arb');
-    final jaFile = File('$outDir/app_ja.arb');
-    expect(enFile.existsSync(), isTrue);
-    expect(jaFile.existsSync(), isTrue);
 
-    final en = enFile.readAsStringSync();
-    expect(en.contains('"@@locale"'), isTrue);
-    expect(en.contains('Hello'), isTrue);
+    try {
+      // Act
+      await exporter.export(sheet, outDir);
 
-    final ja = jaFile.readAsStringSync();
-    expect(ja.contains('"@@locale"'), isTrue);
-    expect(ja.contains('こんにちは'), isTrue);
-    // Cleanup
-    tmp.deleteSync(recursive: true);
+      // Assert
+      final enFile = File('$outDir/app_en.arb');
+      final jaFile = File('$outDir/app_ja.arb');
+      expect(enFile.existsSync(), isTrue);
+      expect(jaFile.existsSync(), isTrue);
+
+      final en = enFile.readAsStringSync();
+      expect(en.contains('"@@locale"'), isTrue);
+      expect(en.contains('Hello'), isTrue);
+
+      final ja = jaFile.readAsStringSync();
+      expect(ja.contains('"@@locale"'), isTrue);
+      expect(ja.contains('こんにちは'), isTrue);
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
   });
 }

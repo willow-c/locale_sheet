@@ -50,7 +50,11 @@ class ExcelParser {
   ///
   /// If [sheetName] is provided, attempts to read that sheet. If not
   /// provided, uses the first sheet found.
-  LocalizationSheet parse(Uint8List bytes, {String? sheetName}) {
+  LocalizationSheet parse(
+    Uint8List bytes, {
+    String? sheetName,
+    String? descriptionHeader,
+  }) {
     final excel = _decoder(bytes);
     final selectedSheetName =
         sheetName ??
@@ -94,12 +98,47 @@ class ExcelParser {
       throw const FormatException('First header cell must be "key"');
     }
 
+    // If a description header is provided, find its column index in the
+    // first row. This column will be treated as the description column and
+    // excluded from the locale columns.
+    int? descriptionColIndex;
+    if (descriptionHeader != null) {
+      // Prevent users from accidentally specifying the `key` column as the
+      // description column. The first header cell must be `key`, so treating
+      // it as a description column would be a user error.
+      if (descriptionHeader.trim().toLowerCase() == 'key') {
+        throw const FormatException("Description header cannot be 'key'");
+      }
+      for (var c = 0; c < header.length; c++) {
+        if (header[c].trim().toLowerCase() ==
+            descriptionHeader.trim().toLowerCase()) {
+          descriptionColIndex = c;
+          break;
+        }
+      }
+      if (descriptionColIndex == null) {
+        throw FormatException(
+          'Description header "$descriptionHeader" not found in the first row',
+        );
+      }
+      // Validate that the description column header is not itself a valid
+      // locale tag. If it is, this likely indicates the user intended that
+      // column to be a locale, not a description column, so fail early.
+      final descHeader = header[descriptionColIndex].trim();
+      if (isValidLocaleTag(descHeader)) {
+        throw FormatException(
+          'Description header "$descHeader" conflicts with a locale tag',
+        );
+      }
+    }
+
     // Determine which header columns are actually locale IDs.
     // Keep both the locale tag and the original column index
     // so we can map rows safely.
     final locales = <String>[];
     final localeColIndices = <int>[];
     for (var c = 1; c < header.length; c++) {
+      if (descriptionColIndex != null && c == descriptionColIndex) continue;
       final h = header[c].trim();
       if (h.isEmpty) continue;
       if (isValidLocaleTag(h)) {
@@ -124,7 +163,18 @@ class ExcelParser {
         translations[locales[i]] = value.isEmpty ? null : value;
       }
 
-      entries.add(LocalizationEntry(key, translations));
+      String? description;
+      if (descriptionColIndex != null) {
+        final descCell = row.length > descriptionColIndex
+            ? row[descriptionColIndex]
+            : null;
+        final desc = _cellToString(descCell).trim();
+        description = desc.isEmpty ? null : desc;
+      }
+
+      entries.add(
+        LocalizationEntry(key, translations, description: description),
+      );
     }
 
     return LocalizationSheet(locales: locales, entries: entries);
@@ -138,4 +188,11 @@ class ExcelParser {
   }
 
   // Uses `isValidLocaleTag` from model_helpers.dart
+
+  /// Return the list of sheet names present in the workbook represented
+  /// by the provided XLSX bytes.
+  List<String> getSheetNames(Uint8List bytes) {
+    final excel = _decoder(bytes);
+    return excel.tables.keys.toList();
+  }
 }

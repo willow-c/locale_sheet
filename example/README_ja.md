@@ -44,7 +44,7 @@
 ## CLI 実行例
 
 ```bash
-dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en
+dart run locale_sheet export --input example/sample.xlsx --format arb --out ./lib/l10n --sheet-name Sheet1 --default-locale en --description-header description
 ```
 
 - 入力ファイル: `example/sample.xlsx`
@@ -52,3 +52,4 @@ dart run locale_sheet export --input example/sample.xlsx --format arb --out ./li
 - 出力先: `./lib/l10n`
 - 出力対象シート: `Sheet1`
 - デフォルトロケール: `en`
+- 説明文のヘッダ: `description`

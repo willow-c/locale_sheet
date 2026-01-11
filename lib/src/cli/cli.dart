@@ -47,6 +47,14 @@ class ExportCommand extends Command<int> {
         help:
             'Name of the sheet to convert. '
             'If omitted, the first sheet in the workbook is used.',
+      )
+      ..addOption(
+        'description-header',
+        help:
+            'Header text to locate the description column in the first row. '
+            'If provided, the parser will search the first row for this text. '
+            'Found column will be used as the per-key description; if not '
+            'found the command will fail.',
       );
   }
 
@@ -82,6 +90,8 @@ class ExportCommand extends Command<int> {
     final format = argResults['format'] as String;
     final outDir = argResults['out'] as String;
 
+    // (No verbose logging by default)
+
     final exporter = _exporters[format];
     if (exporter == null) {
       logger.error('Unsupported format: $format');
@@ -90,10 +100,19 @@ class ExportCommand extends Command<int> {
 
     try {
       final bytes = await File(inputPath).readAsBytes();
+      // (No verbose logging by default)
       final sheetName = argResults['sheet-name'] as String?;
+      final descriptionHeader = argResults.wasParsed('description-header')
+          ? (argResults['description-header'] as String?)
+          : null;
       LocalizationSheet sheet;
       try {
-        sheet = parser.parse(bytes, sheetName: sheetName);
+        sheet = parser.parse(
+          bytes,
+          sheetName: sheetName,
+          descriptionHeader: descriptionHeader,
+        );
+        // proceed without emitting sheet-locales info by default
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
         logger.error(

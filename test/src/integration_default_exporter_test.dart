@@ -20,14 +20,19 @@ void main() {
     );
     final inFile = File('${tmp.path}/in.xlsx')..writeAsBytesSync(bytes);
     final outDir = '${tmp.path}/out';
-    // Act: エクスポーター未指定で変換（デフォルトArbExporter使用）
-    await convertExcelToArb(inputPath: inFile.path, outDir: outDir);
-    // Assert: ARBファイルが生成され、@@localeが含まれる
-    final arbFile = File('$outDir/app_en.arb');
-    expect(arbFile.existsSync(), isTrue);
-    final content = arbFile.readAsStringSync();
-    expect(content, contains('@@locale'));
-    // Cleanup
-    tmp.deleteSync(recursive: true);
+
+    try {
+      // Act: エクスポーター未指定で変換（デフォルトArbExporter使用）
+      await convertExcelToArb(inputPath: inFile.path, outDir: outDir);
+
+      // Assert: ARBファイルが生成され、@@localeが含まれる
+      final arbFile = File('$outDir/app_en.arb');
+      expect(arbFile.existsSync(), isTrue);
+      final content = arbFile.readAsStringSync();
+      expect(content, contains('@@locale'));
+    } finally {
+      // Cleanup
+      tmp.deleteSync(recursive: true);
+    }
   });
 }
