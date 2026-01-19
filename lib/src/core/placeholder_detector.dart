@@ -14,7 +14,7 @@ Set<String> detectPlaceholders(
       .replaceAll('{{', '<<LBRACE>>')
       .replaceAll('}}', '<<RBRACE>>');
 
-  final pattern = RegExp(r'\{(' + nameRegex + r')\}');
+  final pattern = RegExp('\\{($nameRegex)\\}');
   final matches = pattern.allMatches(masked);
   final result = <String>{};
   for (final m in matches) {
