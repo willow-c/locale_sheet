@@ -148,7 +148,6 @@ class ExportRunner {
                   final defaultType = optType ?? 'String';
                   newPlaceholders[ph] = Placeholder(
                     type: defaultType,
-                    example: '',
                     source: 'detected',
                   );
                   final newEntry = entry.copyWith(
