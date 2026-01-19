@@ -173,7 +173,12 @@ class ExcelParser {
       }
 
       entries.add(
-        LocalizationEntry(key, translations, description: description),
+        LocalizationEntry(
+          key,
+          translations,
+          description: description,
+          placeholders: const <String, Placeholder>{},
+        ),
       );
     }
 

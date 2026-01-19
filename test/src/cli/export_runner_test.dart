@@ -371,4 +371,134 @@ void main() {
       }
     },
   );
+
+  test('auto-detect warn does not add placeholder but logs warning', () async {
+    final logger = TestLogger();
+    final entry = LocalizationEntry('items_count', const {
+      'en': 'You have {count} items.',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_warn.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'warn',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      final res = await runner.run(args);
+      expect(res, equals(0));
+      expect(exporter.lastSheet, isNotNull);
+      final outEntry = exporter.lastSheet!.entries.first;
+      expect(outEntry.placeholders.isEmpty, isTrue);
+      expect(logger.infos.any((s) => s.contains('WARNING:')), isTrue);
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  test('auto-detect add actually adds placeholder metadata', () async {
+    final logger = TestLogger();
+    final entry = LocalizationEntry('items_count', const {
+      'en': 'You have {count} items.',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_add.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'add',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      final res = await runner.run(args);
+      expect(res, equals(0));
+      final outEntry = exporter.lastSheet!.entries.first;
+      expect(outEntry.placeholders.containsKey('count'), isTrue);
+      expect(outEntry.placeholders['count']!.type, equals('String'));
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  test('auto-detect ignore does not log warning and does not add', () async {
+    final logger = TestLogger();
+    final entry = LocalizationEntry('items_count', const {
+      'en': 'You have {count} items.',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_ignore.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'ignore',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      final res = await runner.run(args);
+      expect(res, equals(0));
+      final outEntry = exporter.lastSheet!.entries.first;
+      expect(outEntry.placeholders.isEmpty, isTrue);
+      expect(logger.infos.any((s) => s.contains('WARNING:')), isFalse);
+    } finally {
+      await tmp.delete();
+    }
+  });
 }

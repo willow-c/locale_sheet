@@ -55,6 +55,25 @@ class ExportCommand extends Command<int> {
             'found the command will fail.',
       )
       ..addFlag(
+        'auto-detect-placeholders',
+        help: 'Detect placeholders from message bodies like {name}.',
+      )
+      ..addOption(
+        'treat-undefined-placeholders',
+        defaultsTo: 'warn',
+        allowed: ['warn', 'ignore', 'add', 'error'],
+        help:
+            'Behavior when a detected placeholder is not declared. One of '
+            'warn|ignore|add|error. Requires --auto-detect-placeholders to '
+            'have effect.',
+      )
+      ..addOption(
+        'placeholder-default-type',
+        defaultsTo: 'String',
+        help:
+            'Default type to assign to auto-added placeholders (e.g. String).',
+      )
+      ..addFlag(
         'color',
         defaultsTo: true,
         help: 'Enable color output in logs.',
