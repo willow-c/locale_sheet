@@ -59,6 +59,14 @@ class ArbExporter implements LocalizationExporter {
             if (entry.description != null && entry.description!.isNotEmpty) {
               metaObj['description'] = entry.description;
             }
+            // Include placeholders metadata if present on the entry.
+            if (entry.placeholders.isNotEmpty) {
+              final phMap = <String, dynamic>{};
+              entry.placeholders.forEach((name, ph) {
+                phMap[name] = ph.toMap();
+              });
+              metaObj['placeholders'] = phMap;
+            }
             metadata['@${entry.key}'] = metaObj;
           }
 

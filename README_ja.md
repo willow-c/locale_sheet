@@ -28,6 +28,21 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
     - `--default-locale` オプション（短縮 `-d`）は、デフォルト言語とするロケールを指定します。
     - `--default-locale` を省略した場合、シートに `en` が存在すれば `en` をデフォルトとして使用し、なければ最初のロケール列をデフォルトにします。
 
+    例: プレースホルダの自動検出を有効にし、未定義プレースホルダを自動追加する場合:
+
+    ```bash
+    dart run locale_sheet export \
+      --input ./example/sample.xlsx \
+      --format arb \
+      --out ./lib/l10n \
+      --sheet-name Sheet1 \
+      --default-locale en \
+      --description-header description \
+      --auto-detect-placeholders \
+      --treat-undefined-placeholders=add \
+      --placeholder-default-type=String
+    ```
+
 1. プログラム的に使う（最短）:
 
     ```dart
@@ -80,6 +95,14 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
     - 指定したヘッダが見つからなかった場合はエラーで終了します。
     - 説明は有効なデフォルトロケールの ARB のみ `@<key>` メタデータとして出力されます。デフォルトロケールの ARB には各エントリに対して `@<key>` オブジェクトが出力されます（説明が無ければ空オブジェクト `{}` になります）。
       ライブラリのヘルパー等で `defaultLocale` のデフォルト値（例: `defaultLocale = 'en'`）に頼る場合、シートに `en` 列が存在すれば `en` に対してメタデータが出力されますが、`en` が存在しない場合は実際に選択された有効なデフォルト（たとえば最初のロケール列）がメタデータ出力の対象になります。非デフォルトロケールの ARB には `@<key>` は含まれません。
+  - `--auto-detect-placeholders`: メッセージ本文中の `{name}` のような名前付きプレースホルダを検出して、自動的にプレースホルダとして扱うフラグです（オプトイン）。
+  - `--treat-undefined-placeholders`: `warn|ignore|add|error` のいずれかを指定します。検出されたプレースホルダがシート内で宣言されていない場合の振る舞いを制御します。効果を持たせるには `--auto-detect-placeholders` が必要です。振る舞い:
+    - `warn`（デフォルト）: 未定義プレースホルダを警告としてログ出力します。
+    - `ignore`: 何もしません。
+    - `add`: 未定義のプレースホルダをメモリ上で自動追加し、出力される ARB にそのメタデータを含めます（`--placeholder-default-type` で `type` を指定できます）。
+    - `error`: 未定義プレースホルダを検出した時点で終了コード `1` で中断します。
+  - `--placeholder-default-type`: 自動追加するプレースホルダに割り当てるデフォルトの型（デフォルト: `String`）。
+  - ARB 出力に関する注意: エントリにプレースホルダメタデータがある場合、デフォルトロケールの ARB に `@<key>.placeholders` としてプレースホルダ名 → オブジェクトのマッピングが出力されます。各プレースホルダオブジェクトは少なくとも `type` を持ち、`example` や `source`（`detected` / `declared` 等）を含むことがあります。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`

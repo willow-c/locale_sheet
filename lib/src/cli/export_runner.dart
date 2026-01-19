@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:args/args.dart';
-
 import 'package:locale_sheet/locale_sheet.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
+import 'package:locale_sheet/src/core/placeholder_detector.dart';
 
 /// Encapsulates the core export flow so the `ExportCommand` can remain thin.
 class ExportRunner {
@@ -36,6 +36,35 @@ class ExportRunner {
     final outDir = argResults['out'] as String;
 
     final effectiveLogger = _buildEffectiveLogger(argResults);
+
+    bool hasOption(String name) {
+      try {
+        return argResults.wasParsed(name);
+      } on Object catch (_) {
+        return false;
+      }
+    }
+
+    T? getOption<T>(String name) {
+      try {
+        return argResults[name] as T?;
+      } on Object catch (_) {
+        return null;
+      }
+    }
+
+    // If user specified treat-undefined-placeholders but did not enable
+    // auto-detection, warn that the option will have no effect.
+    final treatOption = hasOption('treat-undefined-placeholders')
+        ? getOption<String>('treat-undefined-placeholders')
+        : null;
+    final autoDetect = getOption<bool>('auto-detect-placeholders') ?? false;
+    if (treatOption != null && !autoDetect) {
+      effectiveLogger.info(
+        'WARNING: --treat-undefined-placeholders was provided but '
+        '--auto-detect-placeholders is not set; treat option will be ignored.',
+      );
+    }
 
     _logHeaderAndOptions(
       argResults,
@@ -73,6 +102,69 @@ class ExportRunner {
           sheetName: sheetName,
           descriptionHeader: descriptionHeader,
         );
+
+        // After parsing, optionally auto-detect placeholders in message
+        // bodies if the user requested it via CLI flags.
+        final performAutoDetect =
+            getOption<bool>('auto-detect-placeholders') ?? false;
+        if (performAutoDetect) {
+          final treat = hasOption('treat-undefined-placeholders')
+              ? (getOption<String>('treat-undefined-placeholders') ?? 'warn')
+              : 'warn';
+
+          for (final entry in sheet.entries) {
+            for (final locale in sheet.locales) {
+              final text = entry.translationFor(locale);
+              if (text == null) continue;
+              final found = detectPlaceholders(text);
+              if (found.isEmpty) continue;
+              for (final ph in found) {
+                // Skip if already declared in the entry placeholders
+                if (entry.placeholders.containsKey(ph)) continue;
+
+                if (treat == 'warn') {
+                  effectiveLogger.info(
+                    'WARNING: key=${entry.key}, locale=$locale, '
+                    'placeholder={$ph} not declared',
+                  );
+                } else if (treat == 'error') {
+                  _emitError(
+                    'Undefined placeholder detected: '
+                    'key=${entry.key}, locale=$locale, placeholder={$ph}',
+                    effectiveLogger,
+                  );
+                  return 1;
+                } else if (treat == 'add') {
+                  // Add placeholder to the immutable entry by replacing the
+                  // entry in the sheet's entries list with a copy that
+                  // includes the new placeholder metadata.
+                  final newPlaceholders = Map<String, Placeholder>.from(
+                    entry.placeholders,
+                  );
+                  String? optType;
+                  if (hasOption('placeholder-default-type')) {
+                    optType = getOption<String>('placeholder-default-type');
+                  }
+                  final defaultType = optType ?? 'String';
+                  newPlaceholders[ph] = Placeholder(
+                    type: defaultType,
+                    source: 'detected',
+                  );
+                  final newEntry = entry.copyWith(
+                    placeholders: newPlaceholders,
+                  );
+                  final idx = sheet.entries.indexOf(entry);
+                  if (idx >= 0) sheet.entries[idx] = newEntry;
+                  effectiveLogger.info(
+                    'INFO: auto-added placeholder: '
+                    'key=${entry.key}, placeholder={$ph}',
+                  );
+                }
+              }
+            }
+          }
+        }
+
         final effectiveSheetName =
             sheetName ?? _determineEffectiveSheetName(sheetListResult);
         effectiveLogger.infoSheetLocales(effectiveSheetName, sheet.locales);

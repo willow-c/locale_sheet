@@ -28,6 +28,21 @@
     - The `--default-locale` option (short `-d`) specifies the locale to be used as the default language.
     - If `--default-locale` is omitted, the CLI will use `en` if present in the sheet; otherwise it uses the first locale column.
 
+    Example: enable placeholder auto-detection and auto-add undefined placeholders:
+
+    ```bash
+    dart run locale_sheet export \
+      --input ./example/sample.xlsx \
+      --format arb \
+      --out ./lib/l10n \
+      --sheet-name Sheet1 \
+      --default-locale en \
+      --description-header description \
+      --auto-detect-placeholders \
+      --treat-undefined-placeholders=add \
+      --placeholder-default-type=String
+    ```
+
 1. Programmatic usage (minimal):
 
     ```dart
@@ -81,6 +96,14 @@
     - If the specified header text is not found, the command exits with an error.
     - Descriptions are emitted only into the effective default locale's ARB file as `@<key>` metadata. An `@<key>` object is emitted for each entry in that default-locale ARB file (it will be empty if no description is present).
       When you rely on the default `defaultLocale` value (for example, `defaultLocale = 'en'` in the library helpers), metadata is emitted for `en` only if a locale column named `en` exists; otherwise the locale column selected as the effective default (such as the first locale column when `en` is absent) is the one that receives the `@<key>` metadata. Non-default locale ARB files do not include `@<key>` metadata.
+  - `--auto-detect-placeholders`: When set, the CLI scans message bodies for named placeholders like `{name}` and treats them as placeholders even when not explicitly declared in the sheet.
+  - `--treat-undefined-placeholders`: One of `warn|ignore|add|error`. Controls how the CLI reacts when a detected placeholder is not declared in the sheet. Requires `--auto-detect-placeholders` to have effect. Behavior:
+    - `warn` (default): log a warning for each undefined placeholder.
+    - `ignore`: do nothing.
+    - `add`: auto-add placeholder metadata to the in-memory model and include it in the emitted ARB (uses `--placeholder-default-type` for `type`).
+    - `error`: abort with exit code `1` on first undefined placeholder.
+  - `--placeholder-default-type`: Default type to assign when auto-adding placeholders (default: `String`).
+  - Notes on ARB output and placeholders: when placeholder metadata exists for an entry, the ARB exporter includes a metadata object under `@<key>.placeholders` in the default-locale ARB file. Each placeholder object contains at least a `type` and may include `example` and `source` (e.g. `detected` or `declared`).
 
 - Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
