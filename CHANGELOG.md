@@ -1,5 +1,11 @@
 # CHANGE LOG
 
+## 0.4.0 - 2026-01-20
+
+- feat: add auto-detect placeholders for the `export` command; new CLI options `--auto-detect-placeholders` and `--treat-undefined-placeholders` to control handling of undefined placeholders; updates to documentation and examples ([#24](https://github.com/willow-c/locale_sheet/pull/24))
+- feat: accumulate multiple placeholders detected in a single string during auto-detection (improves placeholder merging in exports)
+- feat: update `example/sample.xlsx` used by CLI and tests ([#28](https://github.com/willow-c/locale_sheet/pull/28))
+
 ## 0.3.0 - 2026-01-11
 
 - feat: enhance CLI logging with color output and structured messages ([#19](https://github.com/willow-c/locale_sheet/pull/19))

@@ -1,6 +1,6 @@
 name: locale_sheet
 description: "CLI and library that converts Excel localization sheets into ARB and other formats."
-version: 0.3.0
+version: 0.4.0
 license: MIT
 repository: https://github.com/willow-c/locale_sheet
 homepage: https://github.com/willow-c/locale_sheet
