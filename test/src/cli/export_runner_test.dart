@@ -459,6 +459,49 @@ void main() {
     }
   });
 
+  test('auto-detect add accumulates multiple placeholders', () async {
+    final logger = TestLogger();
+    final entry = LocalizationEntry('greet_both', const {
+      'en': 'Hello {first} and {second}!',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_multi.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'add',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      final res = await runner.run(args);
+      expect(res, equals(0));
+      final outEntry = exporter.lastSheet!.entries.first;
+      expect(outEntry.placeholders.containsKey('first'), isTrue);
+      expect(outEntry.placeholders.containsKey('second'), isTrue);
+    } finally {
+      await tmp.delete();
+    }
+  });
+
   test('auto-detect ignore does not log warning and does not add', () async {
     final logger = TestLogger();
     final entry = LocalizationEntry('items_count', const {

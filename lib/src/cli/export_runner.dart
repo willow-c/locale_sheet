@@ -112,34 +112,38 @@ class ExportRunner {
               ? (getOption<String>('treat-undefined-placeholders') ?? 'warn')
               : 'warn';
 
-          for (final entry in sheet.entries) {
+          for (var ei = 0; ei < sheet.entries.length; ei++) {
             for (final locale in sheet.locales) {
-              final text = entry.translationFor(locale);
+              final text = sheet.entries[ei].translationFor(locale);
               if (text == null) continue;
               final found = detectPlaceholders(text);
               if (found.isEmpty) continue;
               for (final ph in found) {
+                // Use the current entry in the list so that successive
+                // additions build on the most-recent placeholder map.
+                final currentEntry = sheet.entries[ei];
                 // Skip if already declared in the entry placeholders
-                if (entry.placeholders.containsKey(ph)) continue;
+                if (currentEntry.placeholders.containsKey(ph)) continue;
 
                 if (treat == 'warn') {
                   effectiveLogger.info(
-                    'WARNING: key=${entry.key}, locale=$locale, '
+                    'WARNING: key=${currentEntry.key}, locale=$locale, '
                     'placeholder={$ph} not declared',
                   );
                 } else if (treat == 'error') {
                   _emitError(
                     'Undefined placeholder detected: '
-                    'key=${entry.key}, locale=$locale, placeholder={$ph}',
+                    'key=${currentEntry.key}, locale=$locale, '
+                    'placeholder={$ph}',
                     effectiveLogger,
                   );
                   return 1;
                 } else if (treat == 'add') {
-                  // Add placeholder to the immutable entry by replacing the
-                  // entry in the sheet's entries list with a copy that
-                  // includes the new placeholder metadata.
+                  // Build new placeholders from the current entry so that
+                  // multiple detected placeholders accumulate instead of
+                  // overwriting each other.
                   final newPlaceholders = Map<String, Placeholder>.from(
-                    entry.placeholders,
+                    currentEntry.placeholders,
                   );
                   String? optType;
                   if (hasOption('placeholder-default-type')) {
@@ -150,14 +154,13 @@ class ExportRunner {
                     type: defaultType,
                     source: 'detected',
                   );
-                  final newEntry = entry.copyWith(
+                  final newEntry = currentEntry.copyWith(
                     placeholders: newPlaceholders,
                   );
-                  final idx = sheet.entries.indexOf(entry);
-                  if (idx >= 0) sheet.entries[idx] = newEntry;
+                  sheet.entries[ei] = newEntry;
                   effectiveLogger.info(
                     'INFO: auto-added placeholder: '
-                    'key=${entry.key}, placeholder={$ph}',
+                    'key=${currentEntry.key}, placeholder={$ph}',
                   );
                 }
               }
