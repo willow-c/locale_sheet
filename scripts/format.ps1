@@ -26,7 +26,7 @@ Write-Host "Resolving packages..."
 Invoke-LocalCommand $cmd ($argsPrefix + @('pub','get'))
 
 Write-Host "Running dart format..."
-Invoke-LocalCommand $cmd ($argsPrefix + @('format','.'))
+Invoke-LocalCommand $cmd ($argsPrefix + @('format','--output','none','--set-exit-if-changed','.'))
 
 Write-Host "format complete."
 exit 0
