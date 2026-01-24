@@ -20,13 +20,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Setup FVM
-        uses: kuhnroyal/flutter-fvm-config-action@v3
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
       
-      - name: Install FVM and Flutter
-        run: |
-          dart pub global activate fvm
-          fvm install
+      - name: Install FVM
+        run: dart pub global activate fvm
+      
+      - name: Setup Flutter via FVM
+        uses: kuhnroyal/flutter-fvm-config-action@v3
+        with:
+          setup: true
       
       - name: Install dependencies
         run: fvm dart pub get
