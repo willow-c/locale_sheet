@@ -13,6 +13,8 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -21,20 +23,32 @@ jobs:
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: '3.10.4'
+          sdk: stable
+      
+      - name: Install FVM
+        run: dart pub global activate fvm
+      
+      - name: Setup Flutter via FVM
+        uses: kuhnroyal/flutter-fvm-config-action@v3
+        with:
+          setup: true
       
       - name: Install dependencies
-        run: dart pub get
+        run: fvm dart pub get
       
       - name: Install coverage tool
-        run: dart pub global activate coverage
+        run: fvm dart pub global activate coverage
       
       - name: Grant execute permission for scripts
-        run: |
-          chmod +x ./scripts/verify.sh
-          chmod +x ./scripts/format.sh
-          chmod +x ./scripts/coverage.sh
-          chmod +x ./scripts/clean.sh
+        run: chmod +x ./scripts/verify.sh
       
       - name: Run verify script
         run: ./scripts/verify.sh
+      
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
