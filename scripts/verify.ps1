@@ -36,6 +36,15 @@ Invoke-LocalCommand $cmd ($argsPrefix + @('pub','get'))
 Write-Host "Running format..."
 Invoke-LocalCommand $cmd ($argsPrefix + @('format','.'))
 
+Write-Host "Running dart fix check..."
+# Run dart fix in dry-run mode to check if any fixes are needed
+$fixOutput = & $cmd ($argsPrefix + @('fix','--dry-run')) 2>&1 | Out-String
+Write-Host $fixOutput
+if ($fixOutput -match "computed fixes") {
+    Write-Error "[locale_sheet] ERROR: dart fix would apply changes. Please run 'dart fix --apply' locally."
+    exit 1
+}
+
 Write-Host "Running static analysis..."
 Invoke-LocalCommand $cmd ($argsPrefix + @('analyze'))
 
