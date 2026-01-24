@@ -1,0 +1,33 @@
+name: Verify
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.4'
+      
+      - name: Install dependencies
+        run: dart pub get
+      
+      - name: Grant execute permission for verify script
+        run: chmod +x ./scripts/verify.sh
+      
+      - name: Run verify script
+        run: ./scripts/verify.sh
