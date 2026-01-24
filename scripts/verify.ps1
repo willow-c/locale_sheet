@@ -44,10 +44,24 @@ if (Test-Path $formatScript) {
 
 Write-Host "Running dart fix check..."
 # Run dart fix in dry-run mode to check if any fixes are needed
-$fixOutput = & $cmd ($argsPrefix + @('fix','--dry-run')) 2>&1 | Out-String
-Write-Host $fixOutput
-if ($fixOutput -match "computed fixes") {
-    Write-Error "[locale_sheet] ERROR: dart fix would apply changes. Please run 'dart fix --apply' locally."
+try {
+    $fixOutput = & $cmd ($argsPrefix + @('fix','--dry-run')) 2>&1 | Out-String
+    $fixExitCode = $LASTEXITCODE
+    Write-Host $fixOutput
+    
+    # First, fail if dart fix itself failed (non-zero exit code)
+    if ($fixExitCode -ne 0) {
+        Write-Error "[locale_sheet] ERROR: 'dart fix --dry-run' failed with exit code $fixExitCode."
+        exit $fixExitCode
+    }
+    
+    # Then, check if any fixes would be applied (output contains "computed fixes")
+    if ($fixOutput -match "computed fixes") {
+        Write-Error "[locale_sheet] ERROR: dart fix would apply changes. Please run 'dart fix --apply' locally."
+        exit 1
+    }
+} catch {
+    Write-Error "[locale_sheet] ERROR: Failed to run dart fix check: $_"
     exit 1
 }
 

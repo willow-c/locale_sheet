@@ -26,12 +26,15 @@ echo "[locale_sheet] running dart fix check..."
 FIX_OUTPUT=$(eval $DART_CMD fix --dry-run 2>&1)
 FIX_EXIT_CODE=$?
 echo "$FIX_OUTPUT"
-# Check if any fixes would be applied (output contains "computed fixes")
-if echo "$FIX_OUTPUT" | grep -q "computed fixes" || [ $FIX_EXIT_CODE -ne 0 ]; then
-    if echo "$FIX_OUTPUT" | grep -q "computed fixes"; then
-        echo "[locale_sheet] ERROR: dart fix would apply changes. Please run 'dart fix --apply' locally."
-        exit 1
-    fi
+# First, fail if dart fix itself failed (non-zero exit code)
+if [ $FIX_EXIT_CODE -ne 0 ]; then
+    echo "[locale_sheet] ERROR: 'dart fix --dry-run' failed with exit code $FIX_EXIT_CODE."
+    exit $FIX_EXIT_CODE
+fi
+# Then, check if any fixes would be applied (output contains "computed fixes")
+if echo "$FIX_OUTPUT" | grep -q "computed fixes"; then
+    echo "[locale_sheet] ERROR: dart fix would apply changes. Please run 'dart fix --apply' locally."
+    exit 1
 fi
 
 echo "[locale_sheet] running static analysis..."
