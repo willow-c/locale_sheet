@@ -33,8 +33,14 @@ if (Test-Path $cleanScript) {
 Write-Host "Resolving packages..."
 Invoke-LocalCommand $cmd ($argsPrefix + @('pub','get'))
 
-Write-Host "Running format..."
-Invoke-LocalCommand $cmd ($argsPrefix + @('format','.'))
+Write-Host "Running format (format.ps1)..."
+$formatScript = Join-Path $PSScriptRoot 'format.ps1'
+if (Test-Path $formatScript) {
+    & $formatScript
+} else {
+    Write-Host "format.ps1 が見つかりません, falling back to 'dart format'"
+    Invoke-LocalCommand $cmd ($argsPrefix + @('format','.', '--output','none','--set-exit-if-changed'))
+}
 
 Write-Host "Running dart fix check..."
 # Run dart fix in dry-run mode to check if any fixes are needed
