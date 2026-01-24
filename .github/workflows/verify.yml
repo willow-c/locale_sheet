@@ -45,6 +45,11 @@ jobs:
       - name: Run verify script
         run: ./scripts/verify.sh
       
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      
       - name: Upload coverage artifacts
         if: always()
         uses: actions/upload-artifact@v4

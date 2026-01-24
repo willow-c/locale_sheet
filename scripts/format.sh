@@ -16,6 +16,6 @@ echo "[locale_sheet] fetching packages..."
 eval $DART_CMD pub get
 
 echo "[locale_sheet] running dart format..."
-eval $DART_CMD format .
+eval $DART_CMD format --output none --set-exit-if-changed .
 
 echo "[locale_sheet] format complete."
