@@ -3,6 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/locale_sheet.svg)](https://pub.dev/packages/locale_sheet)
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 [![CI](https://github.com/willow-c/locale_sheet/actions/workflows/verify.yml/badge.svg)](https://github.com/willow-c/locale_sheet/actions/workflows/verify.yml)
+[![codecov](https://codecov.io/gh/willow-c/locale_sheet/branch/main/graph/badge.svg)](https://codecov.io/gh/willow-c/locale_sheet)
 
 [README (English)](./README.md) | [README (日本語)](./README_ja.md)
 
