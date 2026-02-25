@@ -16,7 +16,7 @@ executables:
   locale_sheet:
 
 environment:
-  sdk: ">=3.10.4 <4.0.0"
+  sdk: ">=3.9.0 <4.0.0"
 
 # Add regular dependencies here.
 dependencies:
