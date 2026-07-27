@@ -4,7 +4,7 @@
 
 このファイルは、locale_sheetパッケージの動作確認やテスト用のサンプルデータです。
 
-- `sample.xlsx` ... Excelで開いて編集・保存できるシンプルな例（key, en, ja列）
+- `sample.xlsx` ... Excelで開いて編集・保存できるサンプルです。シートは2つあり、`Sheet1` はロケール列・説明列・ロケール以外の列を含む例、`Sheet2` は別のロケール構成を持つ最小限のシート（`--sheet-name` の動作確認用）です。
 
 ## サンプル内容
 
@@ -14,6 +14,9 @@
 |:--|:--|:--|:--|:--|:--|:--|:--|
 |hello|Hello|こんにちは|你好|你好|你好|the text 'Hello'|こんにちはの文言|
 |bye|Goodbye|さようなら|再见|再見|再見|the text 'Goodbye'|さようならの文言|
+|likeFoodFluit|I like {food} and {fluit}.|私は{food}と{fluit}が好き|我喜欢{food}和{fluit}|我喜歡{food}和{fluit}|我喜歡{food}和{fluit}|||
+
+`likeFoodFluit` の行は `{food}` / `{fluit}` のプレースホルダを含んでおり、`--auto-detect-placeholders` を試すための行です。`description` と `備考` のセルは意図的に空にしてあります。
 
 ### Sheet2
 

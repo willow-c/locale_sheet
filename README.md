@@ -15,7 +15,7 @@
 
     ```yaml
     dev_dependencies:
-    locale_sheet: ^0.4.0
+      locale_sheet: ^0.4.1
     ```
 
 1. Install dependencies and run the CLI:
@@ -105,6 +105,7 @@
     - `add`: auto-add placeholder metadata to the in-memory model and include it in the emitted ARB (uses `--placeholder-default-type` for `type`).
     - `error`: abort with exit code `1` on first undefined placeholder.
   - `--placeholder-default-type`: Default type to assign when auto-adding placeholders (default: `String`).
+  - `--color` / `--no-color`: Enable or disable ANSI color in log output (default: enabled). Use `--no-color` when writing logs to a file or a non-TTY.
   - Notes on ARB output and placeholders: when placeholder metadata exists for an entry, the ARB exporter includes a metadata object under `@<key>.placeholders` in the default-locale ARB file. Each placeholder object contains at least a `type` and may include `example` and `source` (e.g. `detected` or `declared`).
   - Notes on duplicate keys: if the same key appears in more than one row, the CLI logs a `WARNING` for that key and continues (it is not an error). On export, later rows override earlier ones **per locale**, and empty cells do not overwrite — so a key duplicated across rows with different empty cells can end up taking `en` from one row and `ja` from another. Deduplicate the sheet if you see this warning.
 
