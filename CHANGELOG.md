@@ -10,6 +10,8 @@
 - docs: document the `--color` / `--no-color` option, which was missing from the CLI option list in both READMEs.
 - docs: sync `example/README.md` / `example/README_ja.md` with the actual `sample.xlsx` — add the missing `likeFoodFluit` row (the placeholder sample) and replace the stale "columns: key, en, ja" summary.
 - docs: update the Excel format notes in `doc/developer/README.md` to match the parser since 0.2.0 (locale columns are selected by `isValidLocaleTag`, non-locale columns are ignored, description column handling), and record that `dart pub global activate coverage` is required for `make coverage`.
+- docs: add `doc/requirements.md` — a single requirements document with numbered IDs (`FR-xx` / `NFR-xx`) and pointers to the implementation and tests. Requirements were previously spread across the READMEs, `example/README.md`, the developer notes, the changelog, and the code itself.
+- docs: link the requirements document from `doc/developer/README.md`.
 - chore: add `.claude/settings.json` allowlisting read-only dev commands, and gitignore `.claude/settings.local.json`.
 
 ## 0.4.1 - 2026-02-25
