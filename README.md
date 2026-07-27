@@ -92,7 +92,8 @@
   - `--out` / `-o`: Output directory (default: `.`)
   - `--default-locale` / `-d`: Specifies the locale to be used as the default language. If specified and the locale is not present in the sheet, the command exits with code `64`. If omitted, the CLI uses `en` if present, otherwise the first locale column.
   - `--sheet-name`: Specifies the name of the sheet to convert. If omitted, the first sheet in the file is used. Sheet names are case-sensitive (`Sheet1` and `sheet1` are treated as different sheets) and only a single sheet name may be provided. If the specified sheet does not exist, parsing will fail and the command will exit with an error. This option is honored by all exporters.
-  - `--description-header`: Header text to locate the description column in the first row of the sheet. If provided, the CLI searches the first row for this exact header text and uses the matching column as the per-key description source. Behavior summary:
+  - `--description-header`: Header text to locate the description column in the first row of the sheet. If provided, the CLI searches the first row for this header text and uses the matching column as the per-key description source. Behavior summary:
+    - Matching ignores surrounding whitespace and is case-insensitive, so `Description` and ` description ` both match a `description` header.
     - When the header is found, that column is read and each row's value becomes the `description` for the corresponding key.
     - The description column is excluded from the locale columns when detecting locales.
     - If the specified header text is not found, the command exits with an error.

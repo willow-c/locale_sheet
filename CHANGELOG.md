@@ -13,6 +13,8 @@
 - docs: add `doc/requirements.md` — a single requirements document with numbered IDs (`FR-xx` / `NFR-xx`) and pointers to the implementation and tests. Requirements were previously spread across the READMEs, `example/README.md`, the developer notes, the changelog, and the code itself.
 - docs: link the requirements document from `doc/developer/README.md`.
 - chore: add `.claude/settings.json` allowlisting read-only dev commands, and gitignore `.claude/settings.local.json`.
+- chore: drop the `path` dependency, which was declared in `pubspec.yaml` but never imported anywhere in the package.
+- docs: correct the `--description-header` description in `README.md` / `README_ja.md` — matching ignores surrounding whitespace and is case-insensitive, so calling it an "exact" match was wrong.
 
 ## 0.4.1 - 2026-02-25
 
