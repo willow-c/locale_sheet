@@ -103,6 +103,16 @@ class ExportRunner {
           descriptionHeader: descriptionHeader,
         );
 
+        // Duplicate keys parse successfully but are silently overwritten on
+        // export (per locale, last non-empty cell wins), which can mix values
+        // from different rows. Warn so the user can fix the sheet.
+        for (final key in sheet.duplicateKeys) {
+          effectiveLogger.info(
+            'WARNING: duplicate key "$key" found; later rows override '
+            'earlier ones per locale.',
+          );
+        }
+
         // After parsing, optionally auto-detect placeholders in message
         // bodies if the user requested it via CLI flags.
         final performAutoDetect =

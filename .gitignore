@@ -46,5 +46,8 @@ example/out/
 .idea/
 .DS_Store
 
+# Claude Code: 個人用の上書き設定（.claude/settings.json は共有するためコミットする）
+.claude/settings.local.json
+
 # Logs
 *.log

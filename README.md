@@ -106,11 +106,13 @@
     - `error`: abort with exit code `1` on first undefined placeholder.
   - `--placeholder-default-type`: Default type to assign when auto-adding placeholders (default: `String`).
   - Notes on ARB output and placeholders: when placeholder metadata exists for an entry, the ARB exporter includes a metadata object under `@<key>.placeholders` in the default-locale ARB file. Each placeholder object contains at least a `type` and may include `example` and `source` (e.g. `detected` or `declared`).
+  - Notes on duplicate keys: if the same key appears in more than one row, the CLI logs a `WARNING` for that key and continues (it is not an error). On export, later rows override earlier ones **per locale**, and empty cells do not overwrite — so a key duplicated across rows with different empty cells can end up taking `en` from one row and `ja` from another. Deduplicate the sheet if you see this warning.
 
 - Main public API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
   - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
   - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
+  - `LocalizationSheet.duplicateKeys` — returns the keys that appear in more than one row, so library users can apply their own handling.
 
 Both helper functions accept an optional `sheetName` parameter. When provided that sheet name is parsed; when `null` (or omitted) the first sheet in the workbook is used. If the specified sheet is not present a `SheetNotFoundException` is thrown (the CLI prints available sheets and exits with code `64`).
 

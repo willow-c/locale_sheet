@@ -53,10 +53,12 @@ brew install lcov
 - 単体テスト: `fvm dart test` または `dart test`（fvm 使用推奨）
 - カバレッジ: `bash scripts/coverage.sh` または `make coverage`（HTML レポート: `coverage/html/index.html`）
 
-## CI / 開発フロー提案
+## CI / 開発フロー
 
-- PR 作成時に `dart test` と `dart format --set-exit-if-changed .` を実行する CI ワークフローを追加する。
-- カバレッジが著しく低下した場合はレビューを必須にする。
+- `main` / `develop` への push と PR で [.github/workflows/verify.yml](../../.github/workflows/verify.yml) が実行される。
+- ワークフローは FVM で Flutter SDK を用意したうえで `scripts/verify.sh` を実行する。内訳は clean → format → `dart fix --dry-run` チェック → `dart analyze` → `dart test` → カバレッジ収集。
+- カバレッジは Codecov にアップロードされ、`coverage/` は artifact として 30 日保持される。
+- ローカルでも同じ流れを `make verify`（Windows は `make.ps1 verify`）で再現できる。PR を出す前に実行しておくと CI での差し戻しを防げる。
 
 ## ExportCommand の注入方法（開発者向けサンプル）
 
@@ -82,9 +84,9 @@ await runner.run(['export', '--input', 'dummy.xlsx']);
 ## ドキュメントの管理
 
 - ユーザー向けの `README.md`（パッケージトップ）は短く、pub.dev 向けの説明に集中する。
-- 詳細な開発手順、設計ノート、拡張ポイントは `docs/developer/README.md` に集約する。
+- 詳細な開発手順、設計ノート、拡張ポイントは `doc/developer/README.md` に集約する。
 
 ## 次の作業候補
 
-- `docs/architecture.md` を作成して、パーサ・モデル・エクスポーターの詳細を図付きで記述する。
+- `doc/architecture.md` を作成して、パーサ・モデル・エクスポーターの詳細を図付きで記述する。
 - `CONTRIBUTING.md` を追加して開発フロー（ブランチ戦略・PR ガイドライン）を明示する。

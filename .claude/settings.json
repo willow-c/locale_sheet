@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(fvm dart test *)",
+      "Bash(fvm dart test)",
+      "Bash(fvm dart analyze *)",
+      "Bash(fvm dart analyze)",
+      "Bash(fvm dart format *)",
+      "Bash(fvm dart pub get)",
+      "Bash(fvm dart pub deps *)",
+      "Bash(fvm dart pub publish --dry-run)",
+      "Bash(git status *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git diff)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(./scripts/verify.sh)",
+      "Bash(./scripts/format.sh)",
+      "Bash(./scripts/coverage.sh)",
+      "PowerShell(fvm dart test *)",
+      "PowerShell(fvm dart test)",
+      "PowerShell(fvm dart analyze *)",
+      "PowerShell(fvm dart analyze)",
+      "PowerShell(fvm dart format *)",
+      "PowerShell(fvm dart pub get)",
+      "PowerShell(fvm dart pub deps *)",
+      "PowerShell(fvm dart pub publish --dry-run)",
+      "PowerShell(git status *)",
+      "PowerShell(git status)",
+      "PowerShell(git diff *)",
+      "PowerShell(git diff)",
+      "PowerShell(git log *)",
+      "PowerShell(git show *)",
+      "PowerShell(git branch *)"
+    ]
+  }
+}

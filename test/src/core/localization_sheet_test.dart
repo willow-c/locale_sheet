@@ -79,6 +79,49 @@ void main() {
     expect(restored.entries[1].translations['en'], 'Goodbye');
   });
 
+  /// duplicateKeysが重複キーのみを検出順で返し、重複がなければ空になることを検証
+  /// Arrange-Act-Assertパターン
+  test('duplicateKeys reports only keys appearing more than once', () {
+    // Arrange: hello が2回、bye が1回、greet が3回出現するシート
+    final sheet = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+        LocalizationEntry('bye', const {'en': 'Goodbye'}),
+        LocalizationEntry('hello', const {'en': 'Hi again'}),
+        LocalizationEntry('greet', const {'en': 'Yo'}),
+        LocalizationEntry('greet', const {'en': 'Hey'}),
+        LocalizationEntry('greet', const {'en': 'Hiya'}),
+      ],
+    );
+
+    // Act
+    final duplicated = sheet.duplicateKeys;
+
+    // Assert: 重複したキーだけが、重複を検出した順に1回ずつ並ぶ
+    expect(duplicated, ['hello', 'greet']);
+    expect(duplicated, isNot(contains('bye')));
+  });
+
+  /// 重複キーが存在しない場合にduplicateKeysが空になることを検証
+  /// Arrange-Act-Assertパターン
+  test('duplicateKeys is empty when all keys are unique', () {
+    // Arrange
+    final sheet = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+        LocalizationEntry('bye', const {'en': 'Goodbye'}),
+      ],
+    );
+
+    // Act
+    final duplicated = sheet.duplicateKeys;
+
+    // Assert
+    expect(duplicated, isEmpty);
+  });
+
   /// 空のロケール・エントリでの生成やfromMapの異常系も検証
   /// Arrange-Act-Assertパターン
   test('LocalizationSheet edge cases', () {

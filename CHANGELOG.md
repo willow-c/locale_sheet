@@ -1,5 +1,13 @@
 # CHANGE LOG
 
+## vx.x.x 20xx-xx-xx
+
+- feat: warn when the same key appears in more than one row. The CLI now logs a `WARNING` per duplicated key, and `LocalizationSheet.duplicateKeys` exposes the list for library users. Export behavior is unchanged (later rows still win per locale).
+- docs: refresh agent-facing docs for direct-edit agents — replace the patch-attachment workflow and the `apply_patch` reference in `AGENTS.md` / `.github/pull_request_template.md` with a PR-diff-based one, align the commit convention with Conventional Commits as actually used, and correct the folder listing (`tool/` never existed).
+- docs: add `CLAUDE.md` as a thin entry point that imports `AGENTS.md`, so the existing policy is loaded without duplicating it.
+- docs: fix stale `docs/` paths in `doc/developer/README.md` and replace the "CI を追加する" proposal with a description of the CI that now exists.
+- chore: add `.claude/settings.json` allowlisting read-only dev commands, and gitignore `.claude/settings.local.json`.
+
 ## 0.4.1 - 2026-02-25
 
 - chore: downgrade Flutter SDK version to 3.9.0 ([#33](https://github.com/willow-c/locale_sheet/pull/33))
