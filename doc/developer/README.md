@@ -8,8 +8,9 @@
 
 ## 開発に必要なツール
 
-- fvm（Dartバージョン管理）
-- lcov（カバレッジHTMLレポート生成用）
+- fvm（Dart/Flutter バージョン管理。バージョンは `.fvmrc` で固定）
+- lcov（カバレッジHTMLレポート生成用。`genhtml` を使う）
+- `coverage` パッケージ（`scripts/coverage.sh` が `pub global run coverage:format_coverage` を使うため必須）
 
 Homebrew でのインストール例（macOS）:
 
@@ -17,6 +18,12 @@ Homebrew でのインストール例（macOS）:
 brew tap leoafarias/fvm
 brew install fvm
 brew install lcov
+```
+
+`coverage` パッケージはグローバルに有効化します（未実施だと `make coverage` が失敗します）:
+
+```bash
+fvm dart pub global activate coverage
 ```
 
 ## プロジェクト構成
@@ -27,8 +34,8 @@ brew install lcov
   - `lib/src/cli/` — CLI アダプタ・ロガー
   - `lib/src/exporters/` — 出力エクスポーター群（例: `arb_exporter.dart`）
 - `test/` — ユニット / 統合テスト
-- `scripts/` — カバレッジ・クリーン用スクリプト
-- `AGENTS.md` — エージェントによる自動化・運用履歴
+- `scripts/` — 検証・カバレッジ・フォーマット・クリーン用スクリプト（`verify.sh` / `coverage.sh` / `format.sh` / `clean.sh` と対応する `.ps1`）
+- `AGENTS.md` — AIエージェント・自動化ツールの利用方針と運用手順
 
 ## 主な開発方針
 
@@ -38,15 +45,20 @@ brew install lcov
 
 ## Excel フォーマット仕様（開発メモ）
 
-- 1行目はヘッダ行。1列目は `key`。2列目以降はロケールコード（`en`, `ja` 等）。
-- 2行目以降が翻訳エントリ。空セルは未定義として扱う。
+- 1行目はヘッダ行。1列目は `key` でなければならず、そうでなければ `FormatException` になる。
+- 2列目以降のうち、**ロケールタグとして妥当なヘッダを持つ列だけ**がロケール列として扱われる（判定は `lib/src/core/model_helpers.dart` の `isValidLocaleTag`）。`備考` のようなロケールでない列は無視されるため、途中に混ざっていても後続の列がずれることはない。
+- `--description-header` で指定したヘッダの列は説明列として扱われ、ロケール列からは除外される。ヘッダがロケールタグとして妥当な場合は、指定ミスとみなしてエラーになる。
+- 2行目以降が翻訳エントリ。空セルは未定義として扱う。`key` が空の行と空行はスキップされる。
+- 同じ `key` が複数行にある場合も解析は成功する。CLI は該当キーごとに `WARNING` を出し、エクスポート時はロケールごとに後の行が優先される。
 
-例:
+例（`example/sample.xlsx` の `Sheet1` を簡略化したもの）:
 
-|key|en|ja|
-|:--|:--|:--|
-|hello|Hello|こんにちは|
-|bye|Goodbye|さようなら|
+|key|en|ja|description|備考|
+|:--|:--|:--|:--|:--|
+|hello|Hello|こんにちは|the text 'Hello'|こんにちはの文言|
+|bye|Goodbye|さようなら|the text 'Goodbye'|さようならの文言|
+
+`--description-header description` を指定した場合、ロケール列は `en` と `ja` のみになり、`description` は説明として、`備考` は無視される。
 
 ## テスト実行とカバレッジ
 

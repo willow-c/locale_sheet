@@ -4,7 +4,7 @@
 
 This file contains sample data used for testing and verifying the behavior of the `locale_sheet` package.
 
-- `sample.xlsx` — a simple example (columns: `key`, `en`, `ja`) that can be opened and edited with Excel.
+- `sample.xlsx` — an example workbook that can be opened and edited with Excel. It contains two sheets: `Sheet1` covers locale columns, a description column and a non-locale column, while `Sheet2` is a minimal sheet with a different locale set (useful for trying `--sheet-name`).
 
 ## Contents
 
@@ -14,6 +14,9 @@ This file contains sample data used for testing and verifying the behavior of th
 |:--|:--|:--|:--|:--|:--|:--|:--|
 |hello|Hello|こんにちは|你好|你好|你好|the text 'Hello'|こんにちはの文言|
 |bye|Goodbye|さようなら|再见|再見|再見|the text 'Goodbye'|さようならの文言|
+|likeFoodFluit|I like {food} and {fluit}.|私は{food}と{fluit}が好き|我喜欢{food}和{fluit}|我喜歡{food}和{fluit}|我喜歡{food}和{fluit}|||
+
+The `likeFoodFluit` row contains `{food}` / `{fluit}` placeholders and is the row to use when trying `--auto-detect-placeholders`. Its `description` and `備考` cells are intentionally empty.
 
 ### Sheet2
 
