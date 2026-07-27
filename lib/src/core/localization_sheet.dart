@@ -35,6 +35,26 @@ class LocalizationSheet {
   /// シートの各行を表すエントリのリスト。
   final List<LocalizationEntry> entries;
 
+  /// 2回以上出現するキーを、重複を検出した順で返します。
+  ///
+  /// スプレッドシート上でキーが重複していても解析自体は成功しますが、
+  /// エクスポート時にはロケールごとに後勝ちで上書きされます。
+  /// 空セルは上書き対象外となるため、ロケールによって採用される行が
+  /// 食い違う可能性があります。呼び出し側はこの結果を使って
+  /// 利用者に警告できます。
+  ///
+  /// Returns the keys that appear more than once, in detection order.
+  List<String> get duplicateKeys {
+    final seen = <String>{};
+    final duplicated = <String>{};
+    for (final e in entries) {
+      if (!seen.add(e.key)) {
+        duplicated.add(e.key);
+      }
+    }
+    return duplicated.toList(growable: false);
+  }
+
   /// シートをロケールごとのバンドルにグルーピングします。
   /// 各 `LocalizationBundle` には、そのロケールで値が存在するキーのみが含まれます。
   ///

@@ -105,11 +105,13 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
     - `error`: 未定義プレースホルダを検出した時点で終了コード `1` で中断します。
   - `--placeholder-default-type`: 自動追加するプレースホルダに割り当てるデフォルトの型（デフォルト: `String`）。
   - ARB 出力に関する注意: エントリにプレースホルダメタデータがある場合、デフォルトロケールの ARB に `@<key>.placeholders` としてプレースホルダ名 → オブジェクトのマッピングが出力されます。各プレースホルダオブジェクトは少なくとも `type` を持ち、`example` や `source`（`detected` / `declared` 等）を含むことがあります。
+  - 重複キーに関する注意: 同じキーが複数の行に現れる場合、CLI はそのキーについて `WARNING` をログ出力して処理を継続します（エラーにはしません）。エクスポート時は**ロケールごとに**後の行が先の行を上書きし、空セルは上書きしないため、行によって空セルの位置が違うと `en` は片方の行・`ja` はもう片方の行から採用される場合があります。この警告が出たらシート側の重複を解消してください。
 
 - 主な公開 API:
   - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
   - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
   - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
+  - `LocalizationSheet.duplicateKeys` — 複数行に現れるキーの一覧を返します。ライブラリ利用時に独自の扱いを実装できます。
 
 両方のヘルパー関数はオプションの `sheetName` 引数を受け取ります。`sheetName` を指定するとその名前のシートが解析され、`null`（省略）ならワークブックの最初のシートが使用されます。指定したシートが存在しない場合は `SheetNotFoundException` が発生します（CLI 実行時は利用可能なシートを表示して終了コード `64` で終了します）。
 

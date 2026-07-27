@@ -372,6 +372,105 @@ void main() {
     },
   );
 
+  /// 重複キーを含むシートで警告が出力され、処理自体は継続することを検証
+  /// Arrange-Act-Assertパターン
+  test('logs a warning for duplicate keys and still succeeds', () async {
+    // Arrange: hello が2行に重複して存在するシート
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+        LocalizationEntry('hello', const {'en': 'Hi again'}),
+      ],
+    );
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_duplicate.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert: 警告は出るがエクスポートは成功する
+      expect(res, equals(0));
+      expect(
+        logger.infos.any(
+          (s) => s.contains('WARNING: duplicate key "hello"'),
+        ),
+        isTrue,
+      );
+      expect(exporter.lastSheet, isNotNull);
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  /// 重複キーがない場合は重複警告を出力しないことを検証
+  /// Arrange-Act-Assertパターン
+  test('does not log a duplicate-key warning for unique keys', () async {
+    // Arrange
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+        LocalizationEntry('bye', const {'en': 'Goodbye'}),
+      ],
+    );
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_unique.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert
+      expect(res, equals(0));
+      expect(
+        logger.infos.any((s) => s.contains('duplicate key')),
+        isFalse,
+      );
+    } finally {
+      await tmp.delete();
+    }
+  });
+
   test('auto-detect warn does not add placeholder but logs warning', () async {
     final logger = TestLogger();
     final entry = LocalizationEntry('items_count', const {
