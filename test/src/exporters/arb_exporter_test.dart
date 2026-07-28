@@ -5,6 +5,69 @@ import 'package:locale_sheet/src/exporters/arb_exporter.dart';
 import 'package:test/test.dart';
 
 void main() {
+  /// 同じARBファイル名になるロケールが含まれる場合、
+  /// 1ファイルも書き出さずにFormatExceptionとなることを検証
+  /// Arrange-Act-Assertパターン
+  test('ArbExporter throws when two locales map to the same file', () async {
+    // Arrange: モデルを直接組み立てる経路（パーサを通らない）でも守られること
+    final sheet = LocalizationSheet(
+      locales: const ['zh-TW', 'zh_TW'],
+      entries: [
+        LocalizationEntry('hello', const {'zh-TW': '你好', 'zh_TW': '您好'}),
+      ],
+    );
+    final tmp = Directory.systemTemp.createTempSync('arb_collision_test');
+    final outDir = '${tmp.path}/out';
+
+    try {
+      // Act & Assert
+      expect(
+        () => ArbExporter().export(sheet, outDir),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('app_zh_TW.arb'),
+          ),
+        ),
+      );
+
+      // 検証は書き出し前に行われるため、出力先は作られない
+      expect(Directory(outDir).existsSync(), isFalse);
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
+
+  /// 不正なロケールタグが含まれる場合、先行するロケールのファイルも
+  /// 書き出されないことを検証（中途半端な出力を残さない）
+  /// Arrange-Act-Assertパターン
+  test('ArbExporter writes nothing when any locale tag is invalid', () async {
+    // Arrange: CON は Windows の予約デバイス名でファイル名に使えない
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'CON'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello', 'CON': 'x'}),
+      ],
+    );
+    final tmp = Directory.systemTemp.createTempSync('arb_invalid_test');
+    final outDir = '${tmp.path}/out';
+
+    try {
+      // Act & Assert
+      expect(
+        () => ArbExporter().export(sheet, outDir),
+        throwsA(isA<FormatException>()),
+      );
+
+      // en は正当なタグだが、検証が事前に行われるため出力されない
+      expect(File('$outDir/app_en.arb').existsSync(), isFalse);
+      expect(Directory(outDir).existsSync(), isFalse);
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
+
   /// ArbExporterが各ロケールごとにARBファイルを出力し、@@localeが含まれることを検証
   /// Arrange-Act-Assertパターン
   test('ArbExporter writes files and includes @@locale', () async {

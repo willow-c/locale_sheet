@@ -258,6 +258,60 @@ void main() {
     expect(sheet.ignoredHeaders, ['description', '備考']);
   });
 
+  /// 区切り文字だけが違うロケール列がエラーになることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse throws when locale columns differ only by separator', () {
+    // Arrange: zh-TW と zh_TW は同じロケールを指す
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([
+        TextCellValue('key'),
+        TextCellValue('zh-TW'),
+        TextCellValue('zh_TW'),
+      ])
+      ..appendRow([
+        TextCellValue('hello'),
+        TextCellValue('你好'),
+        TextCellValue('您好'),
+      ]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act & Assert: 衝突した両方のヘッダ名がメッセージに含まれる
+    expect(
+      () => parser.parse(Uint8List(0)),
+      throwsA(
+        isA<FormatException>()
+            .having((e) => e.message, 'message', contains('zh-TW'))
+            .having((e) => e.message, 'message', contains('zh_TW')),
+      ),
+    );
+  });
+
+  /// 大文字小文字だけが違うロケール列がエラーになることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse throws when locale columns differ only by letter case', () {
+    // Arrange: BCP 47 では大文字小文字は有意でないため en と EN は同じ
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([
+        TextCellValue('key'),
+        TextCellValue('en'),
+        TextCellValue('EN'),
+      ])
+      ..appendRow([
+        TextCellValue('hello'),
+        TextCellValue('Hello'),
+        TextCellValue('HELLO'),
+      ]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act & Assert
+    expect(
+      () => parser.parse(Uint8List(0)),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   /// ヘッダ行すら無い（行数0の）シートでも例外にせず
   /// 空のシートモデルを返すことを検証
   /// Arrange-Act-Assertパターン

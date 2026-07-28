@@ -188,6 +188,28 @@ class ExcelParser {
       }
     }
 
+    // 正規化すると同一になるロケール列（`zh-TW` と `zh_TW`、`en` と `EN` など）は
+    // 出力ファイル名が衝突し、一方の列の内容が黙って失われる。BCP 47 では
+    // 区切り文字と大文字小文字は有意でないため、これは同じロケールを2列に
+    // 書いた入力ミスとみなしてエラーにする。
+    final firstHeaderByKey = <String, String>{};
+    final conflicts = <String>[];
+    for (final h in selectedLocales) {
+      final key = _matchKey(h);
+      final first = firstHeaderByKey[key];
+      if (first == null) {
+        firstHeaderByKey[key] = h;
+      } else {
+        conflicts.add('"$first" and "$h"');
+      }
+    }
+    if (conflicts.isNotEmpty) {
+      throw FormatException(
+        'Locale columns refer to the same locale: ${conflicts.join(', ')}. '
+        'Separators (- and _) and letter case are not significant.',
+      );
+    }
+
     final entries = <LocalizationEntry>[];
     for (var r = 1; r < maxRows; r++) {
       final row = rows[r];
