@@ -2,6 +2,8 @@
 
 ## vx.x.x 20xx-xx-xx
 
+- feat: add `--locales` (and a `locales` parameter on `convertExcelToArb` / `convertExcelBytesToArb`) to name the locale columns explicitly, e.g. `--locales en,ja`. Automatic detection is permissive — any 2–8 letter header such as `memo` or `note` qualifies as a locale — so sheets with extra columns previously produced files like `app_memo.arb`. A requested tag missing from the header row is now an error rather than a silently dropped language. Omitting the option keeps the previous behavior.
+- feat: the CLI now always logs which columns were selected as locales and which were ignored, and `LocalizationSheet.ignoredHeaders` exposes the ignored headers to library users.
 - fix: `LocalizationEntry` equality and `hashCode` now compare placeholders by value. Two entries holding identical placeholders previously never compared equal, because each comparison converted the placeholders to fresh `Map` instances. Entries without placeholders were unaffected.
 - feat: warn when the same key appears in more than one row. The CLI now logs a `WARNING` per duplicated key, and `LocalizationSheet.duplicateKeys` exposes the list for library users. Export behavior is unchanged (later rows still win per locale).
 - docs: fix the Quick Start dependency snippet in `README.md` / `README_ja.md` — `locale_sheet` was not indented under `dev_dependencies`, so the snippet was invalid YAML as written, and the version was still `^0.4.0`.

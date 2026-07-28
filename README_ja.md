@@ -90,6 +90,9 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
   - `--format`: 出力形式（`arb`）
   - `--out` / `-o`: 出力ディレクトリ（デフォルト: `.`）
   - `--default-locale` / `-d`: デフォルト言語とするロケールを指定します。指定したロケールがシートに存在しない場合は終了コード `64` でエラー終了します。未指定時はシートに `en` があれば `en` を使い、なければ最初のロケール列を使用します。
+  - `--locales`: 出力するロケール列を明示指定します（例: `--locales en,ja`）。指定した場合、その列だけがロケールとして扱われ、他の列はすべて無視されます。一致判定は前後の空白と大文字小文字を無視し、`-` と `_` を同一視するため、`--locales zh_tw` は `zh-TW` ヘッダに一致します。指定したタグが1行目に存在しない場合はエラーで終了するため、綴り間違いで言語が黙って抜け落ちることがありません。省略した場合は自動判定になります（下記の注意を参照）。
+    - **自動判定は緩い**点に注意してください。英字2〜8文字のヘッダはすべて言語サブタグとして妥当と判定されるため、`memo` `note` `comment` `context` `status` `id` といった一般的な列名もロケールとして扱われ、`app_memo.arb` のようなファイルが生成されます。9文字以上（`description`）や非英字を含む（`備考`）ヘッダは該当しません。ロケール以外の列があるシートでは `--locales` の使用を推奨します。
+    - いずれの場合も、ロケールとして採用した列と無視した列の両方がログに出力されるので、結果を確認できます。
   - `--sheet-name`: 変換するシート名を指定します。省略した場合はファイル内の最初のシートを使用します。シート名は大文字小文字を区別します（`Sheet1` と `sheet1` は別扱い）し、単一のシート名のみ指定できます。指定したシートが存在しない場合はパース時にエラーとなり処理は失敗します。全てのエクスポーターで有効です。
   - `--description-header`: シートの1行目（ヘッダ）から説明文列を判定するためのヘッダ文字列を指定します。指定された場合、CLI は1行目を検索して一致する列を各キーの `description` として読み取ります。振る舞いの要約:
     - 一致判定では前後の空白を無視し、大文字小文字も区別しません（`Description` や ` description ` は `description` ヘッダに一致します）。
@@ -110,8 +113,8 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
   - 重複キーに関する注意: 同じキーが複数の行に現れる場合、CLI はそのキーについて `WARNING` をログ出力して処理を継続します（エラーにはしません）。エクスポート時は**ロケールごとに**後の行が先の行を上書きし、空セルは上書きしないため、行によって空セルの位置が違うと `en` は片方の行・`ja` はもう片方の行から採用される場合があります。この警告が出たらシート側の重複を解消してください。
 
 - 主な公開 API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
   - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
   - `LocalizationSheet.duplicateKeys` — 複数行に現れるキーの一覧を返します。ライブラリ利用時に独自の扱いを実装できます。
 

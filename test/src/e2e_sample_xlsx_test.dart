@@ -181,6 +181,29 @@ void main() {
 }''');
   });
 
+  /// --locales で列を明示指定すると、その列だけが出力されることを検証
+  /// Arrange-Act-Assertパターン
+  test('exports only the columns listed in --locales', () async {
+    // Arrange / Act
+    final code = await runExport([
+      '--sheet-name',
+      'Sheet1',
+      '--locales',
+      'en,ja',
+    ]);
+
+    // Assert: zh 系3列は自動判定なら採用されるが、明示指定により外れる
+    expect(code, equals(0));
+    expect(outputFileNames(), ['app_en.arb', 'app_ja.arb']);
+    expect(readArb('app_ja.arb'), '''
+{
+  "bye": "さようなら",
+  "hello": "こんにちは",
+  "likeFoodFluit": "私は{food}と{fluit}が好き",
+  "@@locale": "ja"
+}''');
+  });
+
   /// シート指定で別のロケール構成を持つシートを変換し、`en` が無い場合に
   /// 最初のロケール列がデフォルトになることを検証
   /// Arrange-Act-Assertパターン

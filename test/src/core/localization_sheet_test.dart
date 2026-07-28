@@ -79,6 +79,33 @@ void main() {
     expect(restored.entries[1].translations['en'], 'Goodbye');
   });
 
+  /// ignoredHeadersが既定で空になり、toMap/fromMapで往復できることを検証
+  /// Arrange-Act-Assertパターン
+  test('LocalizationSheet round-trips ignoredHeaders', () {
+    // Arrange
+    final withIgnored = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+      ],
+      ignoredHeaders: const ['memo', '備考'],
+    );
+
+    // Act
+    final restored = LocalizationSheet.fromMap(withIgnored.toMap());
+
+    // Assert
+    expect(restored.ignoredHeaders, ['memo', '備考']);
+
+    // 既定では空。旧形式のMapからの復元でも例外にならない
+    final withoutIgnored = LocalizationSheet(
+      locales: const ['en'],
+      entries: [],
+    );
+    expect(withoutIgnored.ignoredHeaders, isEmpty);
+    expect(LocalizationSheet.fromMap({}).ignoredHeaders, isEmpty);
+  });
+
   /// duplicateKeysが重複キーのみを検出順で返し、重複がなければ空になることを検証
   /// Arrange-Act-Assertパターン
   test('duplicateKeys reports only keys appearing more than once', () {

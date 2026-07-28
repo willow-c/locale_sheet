@@ -5,13 +5,20 @@ import 'package:locale_sheet/src/core/localization_entry.dart';
 ///
 /// - `locales`: ヘッダの2列目以降に並ぶロケールコードの順序リスト。
 /// - `entries`: 各行（`LocalizationEntry`）のリスト。
+/// - `ignoredHeaders`: ロケール列として採用しなかったヘッダのリスト。
 class LocalizationSheet {
   /// Create a sheet model from the given locales and entries.
-  LocalizationSheet({required this.locales, required this.entries});
+  LocalizationSheet({
+    required this.locales,
+    required this.entries,
+    this.ignoredHeaders = const [],
+  });
 
   /// MapからLocalizationSheetを復元（デシリアライズ用）
   factory LocalizationSheet.fromMap(Map<String, dynamic> map) {
     final locales = (map['locales'] as List?)?.cast<String>() ?? <String>[];
+    final ignored =
+        (map['ignoredHeaders'] as List?)?.cast<String>() ?? <String>[];
     final entriesRaw = (map['entries'] as List?) ?? <dynamic>[];
     final entries = entriesRaw
         .map(
@@ -20,13 +27,18 @@ class LocalizationSheet {
               : LocalizationEntry.fromMap(Map<String, dynamic>.from(e as Map)),
         )
         .toList();
-    return LocalizationSheet(locales: locales, entries: entries);
+    return LocalizationSheet(
+      locales: locales,
+      entries: entries,
+      ignoredHeaders: ignored,
+    );
   }
 
   /// このシートをMap形式に変換（シリアライズ用）
   Map<String, dynamic> toMap() => {
     'locales': locales,
     'entries': entries.map((e) => e.toMap()).toList(),
+    'ignoredHeaders': ignoredHeaders,
   };
 
   /// ロケールコードの順序リスト（ヘッダの2列目以降）。
@@ -34,6 +46,14 @@ class LocalizationSheet {
 
   /// シートの各行を表すエントリのリスト。
   final List<LocalizationEntry> entries;
+
+  /// ロケール列として採用しなかったヘッダのリスト（`key` 列と説明列を除く）。
+  ///
+  /// どの列がロケールとして扱われ、どの列が無視されたかを利用者が確認できる
+  /// ようにするためのもの。判定は緩いパターン照合であり、`memo` のような
+  /// 一般的な列名もロケールタグとして妥当と判定され得るため、結果を提示
+  /// できることが重要になる。
+  final List<String> ignoredHeaders;
 
   /// 2回以上出現するキーを、重複を検出した順で返します。
   ///

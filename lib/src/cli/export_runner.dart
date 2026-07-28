@@ -94,6 +94,9 @@ class ExportRunner {
       final descriptionHeader = argResults.wasParsed('description-header')
           ? (argResults['description-header'] as String?)
           : null;
+      final requestedLocales = hasOption('locales')
+          ? getOption<List<String>>('locales')
+          : null;
 
       LocalizationSheet sheet;
       try {
@@ -101,6 +104,7 @@ class ExportRunner {
           bytes,
           sheetName: sheetName,
           descriptionHeader: descriptionHeader,
+          locales: requestedLocales,
         );
 
         // Duplicate keys parse successfully but are silently overwritten on
@@ -180,7 +184,15 @@ class ExportRunner {
 
         final effectiveSheetName =
             sheetName ?? _determineEffectiveSheetName(sheetListResult);
-        effectiveLogger.infoSheetLocales(effectiveSheetName, sheet.locales);
+        // どの列がロケールとして扱われ、どの列が外されたかを常に示す。
+        // ロケール判定は緩く、`memo` のような一般的な列名も通るため、
+        // 採用結果を確認できないと誤った ARB が生成されても気付けない。
+        final ignored = sheet.ignoredHeaders.isEmpty
+            ? '(none)'
+            : sheet.ignoredHeaders.join(', ');
+        effectiveLogger
+          ..infoSheetLocales(effectiveSheetName, sheet.locales)
+          ..info('Ignored columns: $ignored');
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
         final msg =

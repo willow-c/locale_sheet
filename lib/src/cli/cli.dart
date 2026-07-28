@@ -46,6 +46,14 @@ class ExportCommand extends Command<int> {
             'Name of the sheet to convert. '
             'If omitted, the first sheet in the workbook is used.',
       )
+      ..addMultiOption(
+        'locales',
+        help:
+            'Explicit list of locale columns to export, e.g. --locales en,ja. '
+            'When omitted, every header that looks like a locale tag is used, '
+            'which also matches common column names such as "memo". '
+            'A requested tag missing from the header row is an error.',
+      )
       ..addOption(
         'description-header',
         help:
