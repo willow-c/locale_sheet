@@ -25,6 +25,33 @@ class ArbExporter implements LocalizationExporter {
     String outDir, {
     String? defaultLocale,
   }) async {
+    // すべてのロケールを書き出す前に検証する。ループ内で例外を投げると、
+    // 先行するロケールのファイルだけが書き込まれた中途半端な出力が残るため。
+    final fileTagByLocale = <String, String>{};
+    final localeByFileName = <String, String>{};
+    for (final locale in sheet.locales) {
+      final tag = normalizeLocaleTag(locale);
+      if (!isSafeArbLocaleTag(tag)) {
+        throw FormatException(
+          'Locale tag "$locale" is not valid for ARB filename',
+        );
+      }
+      final fileLocaleTag = tag.replaceAll('-', '_');
+      final fileName = 'app_$fileLocaleTag.arb';
+      // 大文字小文字を区別しないファイルシステムでも衝突するため、
+      // 比較は小文字化して行う。区別するファイルシステムとの間で
+      // 出力が変わることを防ぐ狙いもある。
+      final nameKey = fileName.toLowerCase();
+      final other = localeByFileName[nameKey];
+      if (other != null) {
+        throw FormatException(
+          'Locales "$other" and "$locale" both map to $fileName',
+        );
+      }
+      localeByFileName[nameKey] = locale;
+      fileTagByLocale[locale] = fileLocaleTag;
+    }
+
     final dir = Directory(outDir);
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
@@ -33,15 +60,7 @@ class ArbExporter implements LocalizationExporter {
     // and `defaultLocale` is provided, fall back to the default locale's
     // translation when available.
     for (final locale in sheet.locales) {
-      // Normalize and validate locale tag early to fail fast and avoid
-      // building ARB content for invalid tags.
-      final tag = normalizeLocaleTag(locale);
-      if (!isSafeArbLocaleTag(tag)) {
-        throw FormatException(
-          'Locale tag "$locale" is not valid for ARB filename',
-        );
-      }
-      final fileLocaleTag = tag.replaceAll('-', '_');
+      final fileLocaleTag = fileTagByLocale[locale]!;
 
       final arb = <String, dynamic>{};
       final metadata = <String, dynamic>{};
