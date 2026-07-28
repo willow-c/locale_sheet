@@ -1,25 +1,9 @@
-/// モデル内で使う簡易ヘルパー関数群。
-/// Compare two maps for equality of keys and values.
-bool mapEquals(Map<Object?, Object?> a, Map<Object?, Object?> b) {
-  if (a.length != b.length) return false;
-  for (final k in a.keys) {
-    if (!b.containsKey(k)) return false;
-    if (a[k] != b[k]) return false;
-  }
-  return true;
-}
+/// ロケールタグの正規化と検証。
+///
+/// BCP 47 に準じた実用的で緩い判定を行います。レジストリに登録された
+/// 言語・地域コードかどうかは検証しません（ADR-01 を参照）。
+library;
 
-/// Compute a stable hash for a map by combining key/value hashes.
-int mapHash(Map<Object?, Object?> m) {
-  var h = 0;
-  final keys = m.keys.toList()..sort();
-  for (final k in keys) {
-    h = h ^ Object.hash(k, m[k]);
-  }
-  return h;
-}
-
-// Locale helper: normalize and validate locale tags.
 /// Normalize a locale tag by trimming surrounding whitespace.
 ///
 /// This function does not change separator characters; it preserves

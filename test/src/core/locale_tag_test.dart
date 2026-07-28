@@ -1,4 +1,4 @@
-import 'package:locale_sheet/src/core/model_helpers.dart';
+import 'package:locale_sheet/src/core/locale_tag.dart';
 import 'package:test/test.dart';
 
 void main() {

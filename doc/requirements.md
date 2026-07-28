@@ -103,7 +103,7 @@ FR-13 は列の対応付けを列インデックスで保持することで満�
 | FR-35 | ARB 出力に使うタグは、加えてファイル名として安全であること。先頭のドット、連続ハイフン、先頭末尾のハイフン、英数字とハイフン・アンダースコア以外の文字を含むタグは拒否する |
 | FR-36 | Windows の予約デバイス名（`CON`, `PRN`, `AUX`, `NUL`, `COM1`〜`COM9`, `LPT1`〜`LPT9`）に該当するタグ、およびそれらと一致するファイル名になるタグは拒否する |
 
-実装: `lib/src/core/model_helpers.dart`（`normalizeLocaleTag` / `isValidLocaleTag` / `isSafeArbLocaleTag`）
+実装: `lib/src/core/locale_tag.dart`（`normalizeLocaleTag` / `isValidLocaleTag` / `isSafeArbLocaleTag`）
 
 > FR-30〜FR-34 はパース時の列判定に、FR-35〜FR-36 は出力時の検証に使われます。パースを通ったタグが出力時に拒否されることがあり得ます（例: ヘッダ `CON`）。
 
