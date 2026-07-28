@@ -118,6 +118,7 @@ locale_sheet は、Excel スプレッドシートを単一の真実の情報源�
   - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
   - `ExportCommand` — `CommandRunner` に登録して CLI をプログラム内から実行できます。
   - `LocalizationSheet.duplicateKeys` — 複数行に現れるキーの一覧を返します。ライブラリ利用時に独自の扱いを実装できます。
+  - `PlaceholderResolver` — エントリに宣言されていない `{name}` 形式のプレースホルダを検出し、要求された場合は付与します。新しい `LocalizationSheet` と検出結果の一覧を返し、入力のシートは変更しません。検出結果をどう扱うか（警告・無視・中断）は呼び出し側の判断です。
 
 両方のヘルパー関数はオプションの `sheetName` 引数を受け取ります。`sheetName` を指定するとその名前のシートが解析され、`null`（省略）ならワークブックの最初のシートが使用されます。指定したシートが存在しない場合は `SheetNotFoundException` が発生します（CLI 実行時は利用可能なシートを表示して終了コード `64` で終了します）。
 
