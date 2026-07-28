@@ -25,11 +25,16 @@ void main() {
       // Act: エクスポーター未指定で変換（デフォルトArbExporter使用）
       await convertExcelToArb(inputPath: inFile.path, outDir: outDir);
 
-      // Assert: ARBファイルが生成され、@@localeが含まれる
+      // Assert: ARBファイルが生成され、内容が期待どおりであること。
+      // 既定の defaultLocale は 'en' のため、@<key> メタデータも出力される
       final arbFile = File('$outDir/app_en.arb');
       expect(arbFile.existsSync(), isTrue);
-      final content = arbFile.readAsStringSync();
-      expect(content, contains('@@locale'));
+      expect(arbFile.readAsStringSync(), '''
+{
+  "@hello": {},
+  "hello": "Hello",
+  "@@locale": "en"
+}''');
     } finally {
       // Cleanup
       tmp.deleteSync(recursive: true);

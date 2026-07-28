@@ -2,6 +2,7 @@
 
 ## vx.x.x 20xx-xx-xx
 
+- fix: `LocalizationEntry` equality and `hashCode` now compare placeholders by value. Two entries holding identical placeholders previously never compared equal, because each comparison converted the placeholders to fresh `Map` instances. Entries without placeholders were unaffected.
 - feat: warn when the same key appears in more than one row. The CLI now logs a `WARNING` per duplicated key, and `LocalizationSheet.duplicateKeys` exposes the list for library users. Export behavior is unchanged (later rows still win per locale).
 - docs: fix the Quick Start dependency snippet in `README.md` / `README_ja.md` — `locale_sheet` was not indented under `dev_dependencies`, so the snippet was invalid YAML as written, and the version was still `^0.4.0`.
 - docs: document the `--color` / `--no-color` option, which was missing from the CLI option list in both READMEs.

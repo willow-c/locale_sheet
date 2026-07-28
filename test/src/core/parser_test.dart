@@ -158,6 +158,23 @@ void main() {
     );
   });
 
+  /// ヘッダ行すら無い（行数0の）シートでも例外にせず
+  /// 空のシートモデルを返すことを検証
+  /// Arrange-Act-Assertパターン
+  test('parse returns an empty sheet when the sheet has no rows at all', () {
+    // Arrange: 一度も書き込んでいないシートは行数0になる
+    final excel = Excel.createExcel();
+    expect(excel.tables[excel.getDefaultSheet()]!.rows, isEmpty);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final sheet = parser.parse(Uint8List(0));
+
+    // Assert: ヘッダ検証に到達せず、空の結果が返る
+    expect(sheet.locales, isEmpty);
+    expect(sheet.entries, isEmpty);
+  });
+
   test('getSheetNames returns available sheet names via decoder', () {
     final excel = Excel.createExcel();
     excel['Alpha'].appendRow([TextCellValue('key')]);

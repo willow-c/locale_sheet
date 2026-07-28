@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:args/args.dart';
 import 'package:locale_sheet/locale_sheet.dart';
 import 'package:locale_sheet/src/cli/export_runner.dart';
+import 'package:locale_sheet/src/cli/logger.dart';
 import 'package:test/test.dart';
 
 import '../../test_helpers/logger.dart';
@@ -599,6 +600,198 @@ void main() {
     } finally {
       await tmp.delete();
     }
+  });
+
+  /// 自動検出を有効にせず未定義時の扱いだけを指定した場合、
+  /// そのオプションが無視される旨を警告することを検証
+  /// Arrange-Act-Assertパターン
+  test(
+    'warns when treat-undefined-placeholders is set without auto-detection',
+    () async {
+      // Arrange: --auto-detect-placeholders を付けずに treat だけ指定する
+      final logger = TestLogger();
+      final entry = LocalizationEntry('items_count', const {
+        'en': 'You have {count} items.',
+      });
+      final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+      final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+      final exporter = _FakeExporter();
+
+      final tmp = File('test/tmp_export_runner_treat_only.xlsx');
+      await tmp.writeAsBytes([0]);
+
+      try {
+        final args = ExportCommand().argParser.parse([
+          '--input',
+          tmp.path,
+          '--format',
+          'arb',
+          '--out',
+          'outdir',
+          '--treat-undefined-placeholders',
+          'warn',
+          '--default-locale',
+          'en',
+        ]);
+
+        final runner = ExportRunner(
+          logger: logger,
+          parser: parser,
+          exporters: {'arb': exporter},
+        );
+
+        // Act
+        final res = await runner.run(args);
+
+        // Assert: 警告は出るが処理は成功し、検出も行われない
+        expect(res, equals(0));
+        expect(
+          logger.infos.any(
+            (s) => s.contains(
+              '--treat-undefined-placeholders was provided but',
+            ),
+          ),
+          isTrue,
+        );
+        expect(exporter.lastSheet!.entries.first.placeholders, isEmpty);
+      } finally {
+        await tmp.delete();
+      }
+    },
+  );
+
+  /// treat=error で未定義プレースホルダを検出した場合に
+  /// 終了コード1で中断し、エクスポートが行われないことを検証
+  /// Arrange-Act-Assertパターン
+  test('auto-detect error aborts with exit code 1 before exporting', () async {
+    // Arrange
+    final logger = TestLogger();
+    final entry = LocalizationEntry('items_count', const {
+      'en': 'You have {count} items.',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_error.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'error',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert: 中断されるためエクスポーターは呼ばれない
+      expect(res, equals(1));
+      expect(
+        logger.errors.any(
+          (s) => s.contains('Undefined placeholder detected'),
+        ),
+        isTrue,
+      );
+      expect(exporter.lastSheet, isNull);
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  /// --placeholder-default-type で指定した型が自動追加時に使われることを検証
+  /// Arrange-Act-Assertパターン
+  test('auto-detect add honors placeholder-default-type', () async {
+    // Arrange
+    final logger = TestLogger();
+    final entry = LocalizationEntry('items_count', const {
+      'en': 'You have {count} items.',
+    });
+    final sheet = LocalizationSheet(locales: const ['en'], entries: [entry]);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_type.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = ExportCommand().argParser.parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+        '--auto-detect-placeholders',
+        '--treat-undefined-placeholders',
+        'add',
+        '--placeholder-default-type',
+        'int',
+        '--default-locale',
+        'en',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert: 既定の String ではなく指定した int が使われる
+      expect(res, equals(0));
+      final outEntry = exporter.lastSheet!.entries.first;
+      expect(outEntry.placeholders['count']!.type, equals('int'));
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  /// ロガーを差し替えていない場合（既定の SimpleLogger）でも
+  /// エラーが報告され終了コード1を返すことを検証
+  /// Arrange-Act-Assertパターン
+  test('reports errors through the default SimpleLogger', () async {
+    // Arrange: SimpleLogger を渡すと内部で色設定を反映した別インスタンスが
+    // 作られるため、ロガーが同一でない場合のエラー出力経路を通る
+    final sheet = LocalizationSheet(locales: const ['en'], entries: []);
+    final runner = ExportRunner(
+      logger: SimpleLogger(color: false),
+      parser: _FakeParser(sheet),
+      exporters: {'arb': _FakeExporter()},
+    );
+
+    final args = argParser().parse([
+      '--input',
+      'test/no_such_input_file.xlsx',
+      '--format',
+      'arb',
+      '--out',
+      'outdir',
+      '--no-color',
+    ]);
+
+    // Act: 入力ファイルが存在しないため読み込みで失敗する
+    final res = await runner.run(args);
+
+    // Assert
+    expect(res, equals(1));
   });
 
   test('auto-detect ignore does not log warning and does not add', () async {
