@@ -258,6 +258,61 @@ void main() {
     expect(sheet.ignoredHeaders, ['description', '備考']);
   });
 
+  /// 文字列以外のセル型が、型ごとに定めた表記で文字列化されることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse converts each cell value type explicitly', () {
+    // Arrange: ロケール列に各種のセル型を並べる
+    final excel = Excel.createExcel();
+    final sheet = excel['Sheet1']
+      ..updateCell(CellIndex.indexByString('A1'), TextCellValue('key'))
+      ..updateCell(CellIndex.indexByString('B1'), TextCellValue('en'));
+
+    final cases = <String, CellValue>{
+      'text': TextCellValue('hello'),
+      'int': const IntCellValue(42),
+      'double': const DoubleCellValue(1.5),
+      'bool': const BoolCellValue(true),
+      'date': const DateCellValue(year: 2026, month: 7, day: 28),
+      'datetime': const DateTimeCellValue(
+        year: 2026,
+        month: 7,
+        day: 28,
+        hour: 9,
+        minute: 5,
+      ),
+      'time': const TimeCellValue(hour: 9, minute: 5, second: 3),
+      'formula': const FormulaCellValue('=A1'),
+    };
+
+    var row = 2;
+    for (final entry in cases.entries) {
+      sheet
+        ..updateCell(
+          CellIndex.indexByString('A$row'),
+          TextCellValue(entry.key),
+        )
+        ..updateCell(CellIndex.indexByString('B$row'), entry.value);
+      row++;
+    }
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final parsed = parser.parse(Uint8List(0));
+    final byKey = {
+      for (final e in parsed.entries) e.key: e.translations['en'],
+    };
+
+    // Assert: 型ごとに定めた表記になる
+    expect(byKey['text'], 'hello');
+    expect(byKey['int'], '42');
+    expect(byKey['double'], '1.5');
+    expect(byKey['bool'], 'true');
+    expect(byKey['date'], '2026-07-28T00:00:00.000Z');
+    expect(byKey['datetime'], '2026-07-28T09:05:00.000Z');
+    expect(byKey['time'], '09:05:03');
+    expect(byKey['formula'], '=A1');
+  });
+
   /// 区切り文字だけが違うロケール列がエラーになることを検証
   /// Arrange-Act-Assertパターン
   test('parse throws when locale columns differ only by separator', () {
