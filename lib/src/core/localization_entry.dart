@@ -89,10 +89,10 @@ class LocalizationEntry {
         other.key == key &&
         mapEquals(other.translations, translations) &&
         other.description == description &&
-        mapEquals(
-          other.placeholders.map((k, v) => MapEntry(k, v.toMap())),
-          placeholders.map((k, v) => MapEntry(k, v.toMap())),
-        );
+        // Placeholder は値による等価比較を実装しているため、Map へ変換せず
+        // そのまま比較する。変換すると毎回新しい Map インスタンスが作られ、
+        // 内容が同じでも常に不一致になってしまう。
+        mapEquals(other.placeholders, placeholders);
   }
 
   @override
@@ -100,6 +100,6 @@ class LocalizationEntry {
     key,
     mapHash(translations),
     description,
-    mapHash(placeholders.map((k, v) => MapEntry(k, v.toMap()))),
+    mapHash(placeholders),
   );
 }

@@ -56,6 +56,42 @@ void main() {
     expect(e3.translations['ja'], isNull);
   });
 
+  /// プレースホルダを含むエントリがtoMap/fromMapで往復できることと、
+  /// placeholders内の不正な要素が無視されることを検証
+  /// Arrange-Act-Assertパターン
+  test('LocalizationEntry round-trips placeholders through toMap/fromMap', () {
+    // Arrange
+    final original = LocalizationEntry(
+      'items_count',
+      const {'en': 'You have {count} items.'},
+      description: 'item counter',
+      placeholders: const {
+        'count': Placeholder(type: 'int', example: '3', source: 'declared'),
+      },
+    );
+
+    // Act
+    final restored = LocalizationEntry.fromMap(
+      Map<String, dynamic>.from(original.toMap()),
+    );
+
+    // Assert: プレースホルダの各フィールドが保持される
+    expect(restored.placeholders.keys, ['count']);
+    final ph = restored.placeholders['count']!;
+    expect(ph.type, 'int');
+    expect(ph.example, '3');
+    expect(ph.source, 'declared');
+    expect(restored, equals(original));
+
+    // placeholders の値がMapでない場合はそのエントリを無視する
+    const invalid = {
+      'key': 'k',
+      'placeholders': {'bad': 'not-a-map'},
+    };
+    final fromInvalid = LocalizationEntry.fromMap(invalid);
+    expect(fromInvalid.placeholders, isEmpty);
+  });
+
   /// LocalizationEntryの等価性・hashCodeの境界値を検証
   /// Arrange-Act-Assertパターン
   test('LocalizationEntry equality and hashCode edge', () {
@@ -66,5 +102,34 @@ void main() {
     expect(a, equals(b));
     expect(a == c, isFalse);
     expect(a.hashCode, equals(b.hashCode));
+  });
+
+  /// プレースホルダを持つエントリ同士でも、内容が同じなら等価と判定され
+  /// hashCodeも一致することを検証（Placeholderの値比較が使われること）
+  /// Arrange-Act-Assertパターン
+  test('LocalizationEntry equality accounts for placeholder values', () {
+    // Arrange: 同じ内容のプレースホルダを持つ別インスタンス
+    final a = LocalizationEntry(
+      'k',
+      const {'en': 'v {n}'},
+      placeholders: const {'n': Placeholder(type: 'int')},
+    );
+    final b = LocalizationEntry(
+      'k',
+      const {'en': 'v {n}'},
+      placeholders: const {'n': Placeholder(type: 'int')},
+    );
+    final differentType = LocalizationEntry(
+      'k',
+      const {'en': 'v {n}'},
+      placeholders: const {'n': Placeholder(type: 'String')},
+    );
+    final noPlaceholder = LocalizationEntry('k', const {'en': 'v {n}'});
+
+    // Act & Assert
+    expect(a, equals(b));
+    expect(a.hashCode, equals(b.hashCode));
+    expect(a == differentType, isFalse);
+    expect(a == noPlaceholder, isFalse);
   });
 }
