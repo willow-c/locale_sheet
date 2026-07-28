@@ -91,6 +91,9 @@
   - `--format`: Output format (e.g. `arb`)
   - `--out` / `-o`: Output directory (default: `.`)
   - `--default-locale` / `-d`: Specifies the locale to be used as the default language. If specified and the locale is not present in the sheet, the command exits with code `64`. If omitted, the CLI uses `en` if present, otherwise the first locale column.
+  - `--locales`: Explicit list of locale columns to export, e.g. `--locales en,ja`. When given, only those columns are treated as locales and every other column is ignored. Matching ignores surrounding whitespace and case, and treats `-` and `_` as equivalent, so `--locales zh_tw` matches a `zh-TW` header. A requested tag that is absent from the header row aborts with an error, so a typo cannot silently drop a language. When omitted, locale columns are detected automatically — see the note below.
+    - **Automatic detection is permissive.** Any header of 2–8 ASCII letters qualifies as a language subtag, so common column names such as `memo`, `note`, `comment`, `context`, `status` and `id` are also treated as locales and would produce files like `app_memo.arb`. Headers of 9 or more characters (`description`) or containing non-ASCII characters (`備考`) do not qualify. Use `--locales` when your sheet has extra columns.
+    - Either way, the CLI logs both the columns selected as locales and the columns it ignored, so you can confirm the result.
   - `--sheet-name`: Specifies the name of the sheet to convert. If omitted, the first sheet in the file is used. Sheet names are case-sensitive (`Sheet1` and `sheet1` are treated as different sheets) and only a single sheet name may be provided. If the specified sheet does not exist, parsing will fail and the command will exit with an error. This option is honored by all exporters.
   - `--description-header`: Header text to locate the description column in the first row of the sheet. If provided, the CLI searches the first row for this header text and uses the matching column as the per-key description source. Behavior summary:
     - Matching ignores surrounding whitespace and is case-insensitive, so `Description` and ` description ` both match a `description` header.
@@ -111,8 +114,8 @@
   - Notes on duplicate keys: if the same key appears in more than one row, the CLI logs a `WARNING` for that key and continues (it is not an error). On export, later rows override earlier ones **per locale**, and empty cells do not overwrite — so a key duplicated across rows with different empty cells can end up taking `en` from one row and `ja` from another. Deduplicate the sheet if you see this warning.
 
 - Main public API:
-  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
-  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader})`
+  - `convertExcelToArb({required String inputPath, required String outDir, ExcelParser? parser, LocalizationExporter? exporter, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
+  - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
   - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
   - `LocalizationSheet.duplicateKeys` — returns the keys that appear in more than one row, so library users can apply their own handling.
 

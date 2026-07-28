@@ -46,14 +46,33 @@ class ExcelParser {
 
   final Excel Function(Uint8List) _decoder;
 
+  /// Normalize a header for comparison against a requested locale.
+  ///
+  /// Trims surrounding whitespace, lower-cases, and treats `_` and `-` as the
+  /// same separator, so `zh_TW` and `zh-tw` are considered the same request.
+  static String _matchKey(String value) =>
+      value.trim().toLowerCase().replaceAll('_', '-');
+
   /// Parse XLSX bytes and return a [LocalizationSheet].
   ///
   /// If [sheetName] is provided, attempts to read that sheet. If not
   /// provided, uses the first sheet found.
+  ///
+  /// If [locales] is provided, only the header columns matching those tags are
+  /// treated as locale columns and every other column is ignored. Matching is
+  /// case-insensitive and treats `_` and `-` as equivalent. A requested tag
+  /// that is absent from the header row is a [FormatException], so typos fail
+  /// loudly instead of silently dropping a language.
+  ///
+  /// If [locales] is omitted, the columns are selected by pattern matching
+  /// (`isValidLocaleTag`) as before. That check is permissive — common column
+  /// names such as `memo` also qualify — so the resulting selection and the
+  /// ignored headers are both reported on [LocalizationSheet].
   LocalizationSheet parse(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     final excel = _decoder(bytes);
     final selectedSheetName =
@@ -132,18 +151,40 @@ class ExcelParser {
       }
     }
 
-    // Determine which header columns are actually locale IDs.
+    // Determine which header columns are locale columns.
     // Keep both the locale tag and the original column index
-    // so we can map rows safely.
-    final locales = <String>[];
+    // so we can map rows safely, and record what was left out so callers can
+    // show the user which columns were and were not treated as locales.
+    final requested = locales?.map(_matchKey).toSet();
+    final selectedLocales = <String>[];
     final localeColIndices = <int>[];
+    final ignoredHeaders = <String>[];
     for (var c = 1; c < header.length; c++) {
       if (descriptionColIndex != null && c == descriptionColIndex) continue;
       final h = header[c].trim();
       if (h.isEmpty) continue;
-      if (isValidLocaleTag(h)) {
-        locales.add(h);
+      final isLocale = requested == null
+          ? isValidLocaleTag(h)
+          : requested.contains(_matchKey(h));
+      if (isLocale) {
+        selectedLocales.add(h);
         localeColIndices.add(c);
+      } else {
+        ignoredHeaders.add(h);
+      }
+    }
+
+    // 指定されたロケールが1行目に存在しない場合は、綴り間違いを黙って
+    // 落とさないようエラーにする。
+    if (locales != null) {
+      final matched = selectedLocales.map(_matchKey).toSet();
+      final missing = locales
+          .where((l) => !matched.contains(_matchKey(l)))
+          .toList();
+      if (missing.isNotEmpty) {
+        throw FormatException(
+          'Locale column(s) not found in the first row: ${missing.join(', ')}',
+        );
       }
     }
 
@@ -156,11 +197,11 @@ class ExcelParser {
       if (key.isEmpty) continue;
 
       final translations = <String, String?>{};
-      for (var i = 0; i < locales.length; i++) {
+      for (var i = 0; i < selectedLocales.length; i++) {
         final colIndex = localeColIndices[i];
         final cell = row.length > colIndex ? row[colIndex] : null;
         final value = _cellToString(cell);
-        translations[locales[i]] = value.isEmpty ? null : value;
+        translations[selectedLocales[i]] = value.isEmpty ? null : value;
       }
 
       String? description;
@@ -182,7 +223,11 @@ class ExcelParser {
       );
     }
 
-    return LocalizationSheet(locales: locales, entries: entries);
+    return LocalizationSheet(
+      locales: selectedLocales,
+      entries: entries,
+      ignoredHeaders: ignoredHeaders,
+    );
   }
 
   String _cellToString(Data? cell) {

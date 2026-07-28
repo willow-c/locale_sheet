@@ -21,6 +21,9 @@ export 'src/exporters/exporter.dart';
 /// の場合（オプションを省略した場合）はワークブックの最初のシートが使
 /// 用されます。指定したシート名が存在しないときは `SheetNotFoundException`
 /// を投げます。
+/// [locales] を渡すとその列だけをロケール列として扱います。省略した場合は
+/// ヘッダがロケールタグらしい列を自動判定します（`memo` のような一般的な
+/// 列名も該当し得ます）。
 Future<void> convertExcelBytesToArb(
   Uint8List bytes,
   LocalizationExporter exporter,
@@ -29,12 +32,14 @@ Future<void> convertExcelBytesToArb(
   String defaultLocale = 'en',
   String? sheetName,
   String? descriptionHeader,
+  List<String>? locales,
 }) async {
   final usedParser = parser ?? ExcelParser();
   final sheet = usedParser.parse(
     bytes,
     sheetName: sheetName,
     descriptionHeader: descriptionHeader,
+    locales: locales,
   );
   await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
 }
@@ -54,6 +59,7 @@ Future<void> convertExcelToArb({
   String defaultLocale = 'en',
   String? sheetName,
   String? descriptionHeader,
+  List<String>? locales,
 }) async {
   final bytes = await io.File(inputPath).readAsBytes();
   final usedExporter = exporter ?? ArbExporter();
@@ -65,5 +71,6 @@ Future<void> convertExcelToArb({
     defaultLocale: defaultLocale,
     sheetName: sheetName,
     descriptionHeader: descriptionHeader,
+    locales: locales,
   );
 }

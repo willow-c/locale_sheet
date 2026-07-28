@@ -36,6 +36,7 @@ class _FakeParser extends ExcelParser {
     List<int> bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     return sheet;
   }
@@ -54,6 +55,7 @@ class _ThrowingParser extends ExcelParser {
     List<int> bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     throw SheetNotFoundException(requested, available);
   }
@@ -68,6 +70,7 @@ class _FormatThrowingParser extends ExcelParser {
     List<int> bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     throw const FormatException('bad format');
   }
@@ -86,6 +89,7 @@ class _SheetListFailureParser extends ExcelParser {
     List<int> bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     return sheet;
   }
@@ -106,6 +110,7 @@ class _EmptySheetListParser extends ExcelParser {
     List<int> bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     return sheet;
   }
@@ -372,6 +377,91 @@ void main() {
       }
     },
   );
+
+  /// ロケールとして扱った列と無視した列が常にログ出力されることを検証
+  /// Arrange-Act-Assertパターン
+  test('logs both the selected locales and the ignored columns', () async {
+    // Arrange
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(
+      locales: const ['en', 'ja'],
+      entries: [],
+      ignoredHeaders: const ['memo', '備考'],
+    );
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+
+    final tmp = File('test/tmp_export_runner_ignored.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': _FakeExporter()},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert
+      expect(res, equals(0));
+      final joined = logger.infos.join('\n');
+      expect(joined, contains('Locales: en, ja'));
+      expect(joined, contains('Ignored columns: memo, 備考'));
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  /// 無視した列が無い場合も、その旨がログに出ることを検証
+  /// Arrange-Act-Assertパターン
+  test('logs "(none)" when no column was ignored', () async {
+    // Arrange
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(locales: const ['en'], entries: []);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+
+    final tmp = File('test/tmp_export_runner_no_ignored.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': _FakeExporter()},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert
+      expect(res, equals(0));
+      expect(
+        logger.infos.any((s) => s == 'Ignored columns: (none)'),
+        isTrue,
+      );
+    } finally {
+      await tmp.delete();
+    }
+  });
 
   /// 重複キーを含むシートで警告が出力され、処理自体は継続することを検証
   /// Arrange-Act-Assertパターン

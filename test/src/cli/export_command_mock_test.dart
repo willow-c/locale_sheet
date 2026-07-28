@@ -21,6 +21,7 @@ class FakeParser extends ExcelParser {
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     lastSheetName = sheetName;
     lastDescriptionHeader = descriptionHeader;
@@ -456,6 +457,7 @@ class _ThrowingParser extends ExcelParser {
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     throw SheetNotFoundException(requested, available);
   }
@@ -470,6 +472,7 @@ class _FormatThrowingParser extends ExcelParser {
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     throw const FormatException('Description header not found');
   }
@@ -487,6 +490,7 @@ class _LoggingFakeParser extends ExcelParser {
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
+    List<String>? locales,
   }) {
     return sheet;
   }

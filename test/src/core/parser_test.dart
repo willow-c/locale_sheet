@@ -158,6 +158,106 @@ void main() {
     );
   });
 
+  /// localesを明示指定した場合、指定した列だけがロケールとして扱われ、
+  /// ロケールタグらしい他の列（memo等）が無視されることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse uses only the requested locales when locales is given', () {
+    // Arrange: memo は isValidLocaleTag では妥当と判定されてしまう列名
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([
+        TextCellValue('key'),
+        TextCellValue('en'),
+        TextCellValue('ja'),
+        TextCellValue('memo'),
+      ])
+      ..appendRow([
+        TextCellValue('hello'),
+        TextCellValue('Hello'),
+        TextCellValue('こんにちは'),
+        TextCellValue('a note'),
+      ]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final sheet = parser.parse(Uint8List(0), locales: ['en', 'ja']);
+
+    // Assert: memo はロケールから外れ、無視した列として記録される
+    expect(sheet.locales, ['en', 'ja']);
+    expect(sheet.ignoredHeaders, ['memo']);
+    expect(sheet.entries.single.translations.keys, ['en', 'ja']);
+  });
+
+  /// localesの照合が大文字小文字と区切り文字の違いを吸収することを検証
+  /// Arrange-Act-Assertパターン
+  test('parse matches requested locales ignoring case and separators', () {
+    // Arrange: ヘッダは zh-Hant-HK、指定は zh_hant_hk
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([TextCellValue('key'), TextCellValue('zh-Hant-HK')])
+      ..appendRow([TextCellValue('hello'), TextCellValue('你好')]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final sheet = parser.parse(Uint8List(0), locales: ['zh_hant_hk']);
+
+    // Assert: ロケール名はヘッダの表記がそのまま保持される
+    expect(sheet.locales, ['zh-Hant-HK']);
+    expect(sheet.ignoredHeaders, isEmpty);
+  });
+
+  /// 指定したロケール列が1行目に存在しない場合にFormatExceptionとなることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse throws when a requested locale column is missing', () {
+    // Arrange
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([TextCellValue('key'), TextCellValue('en')])
+      ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act & Assert: 綴り間違いを黙って落とさない
+    expect(
+      () => parser.parse(Uint8List(0), locales: ['en', 'fr']),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          contains('fr'),
+        ),
+      ),
+    );
+  });
+
+  /// localesを指定しない場合は従来どおり自動判定され、
+  /// 判定から外れた列がignoredHeadersに記録されることを検証
+  /// Arrange-Act-Assertパターン
+  test('parse records ignored headers when locales is not given', () {
+    // Arrange: description は9文字以上、備考は非英字なので自動判定から外れる
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([
+        TextCellValue('key'),
+        TextCellValue('en'),
+        TextCellValue('description'),
+        TextCellValue('備考'),
+      ])
+      ..appendRow([
+        TextCellValue('hello'),
+        TextCellValue('Hello'),
+        TextCellValue('desc'),
+        TextCellValue('note'),
+      ]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final sheet = parser.parse(Uint8List(0));
+
+    // Assert
+    expect(sheet.locales, ['en']);
+    expect(sheet.ignoredHeaders, ['description', '備考']);
+  });
+
   /// ヘッダ行すら無い（行数0の）シートでも例外にせず
   /// 空のシートモデルを返すことを検証
   /// Arrange-Act-Assertパターン
