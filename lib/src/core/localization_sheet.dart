@@ -8,11 +8,17 @@ import 'package:locale_sheet/src/core/localization_entry.dart';
 /// - `ignoredHeaders`: ロケール列として採用しなかったヘッダのリスト。
 class LocalizationSheet {
   /// Create a sheet model from the given locales and entries.
+  ///
+  /// 各リストは変更不可として保持します。解析結果を後から書き換えるのではなく、
+  /// 新しいシートを組み立てる形に統一するためです（`LocalizationEntry` が
+  /// 不変であることと揃えています）。
   LocalizationSheet({
-    required this.locales,
-    required this.entries,
-    this.ignoredHeaders = const [],
-  });
+    required List<String> locales,
+    required List<LocalizationEntry> entries,
+    List<String> ignoredHeaders = const [],
+  }) : locales = List.unmodifiable(locales),
+       entries = List.unmodifiable(entries),
+       ignoredHeaders = List.unmodifiable(ignoredHeaders);
 
   /// MapからLocalizationSheetを復元（デシリアライズ用）
   factory LocalizationSheet.fromMap(Map<String, dynamic> map) {

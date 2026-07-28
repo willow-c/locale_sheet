@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:args/args.dart';
 import 'package:locale_sheet/locale_sheet.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
-import 'package:locale_sheet/src/core/placeholder_detector.dart';
 
 /// Encapsulates the core export flow so the `ExportCommand` can remain thin.
 class ExportRunner {
@@ -117,69 +116,20 @@ class ExportRunner {
           );
         }
 
-        // After parsing, optionally auto-detect placeholders in message
-        // bodies if the user requested it via CLI flags.
-        final performAutoDetect =
-            getOption<bool>('auto-detect-placeholders') ?? false;
-        if (performAutoDetect) {
-          final treat = hasOption('treat-undefined-placeholders')
-              ? (getOption<String>('treat-undefined-placeholders') ?? 'warn')
-              : 'warn';
-
-          for (var ei = 0; ei < sheet.entries.length; ei++) {
-            for (final locale in sheet.locales) {
-              final text = sheet.entries[ei].translationFor(locale);
-              if (text == null) continue;
-              final found = detectPlaceholders(text);
-              if (found.isEmpty) continue;
-              for (final ph in found) {
-                // Use the current entry in the list so that successive
-                // additions build on the most-recent placeholder map.
-                final currentEntry = sheet.entries[ei];
-                // Skip if already declared in the entry placeholders
-                if (currentEntry.placeholders.containsKey(ph)) continue;
-
-                if (treat == 'warn') {
-                  effectiveLogger.warn(
-                    'key=${currentEntry.key}, locale=$locale, '
-                    'placeholder={$ph} not declared',
-                  );
-                } else if (treat == 'error') {
-                  _emitError(
-                    'Undefined placeholder detected: '
-                    'key=${currentEntry.key}, locale=$locale, '
-                    'placeholder={$ph}',
-                    effectiveLogger,
-                  );
-                  return 1;
-                } else if (treat == 'add') {
-                  // Build new placeholders from the current entry so that
-                  // multiple detected placeholders accumulate instead of
-                  // overwriting each other.
-                  final newPlaceholders = Map<String, Placeholder>.from(
-                    currentEntry.placeholders,
-                  );
-                  String? optType;
-                  if (hasOption('placeholder-default-type')) {
-                    optType = getOption<String>('placeholder-default-type');
-                  }
-                  final defaultType = optType ?? 'String';
-                  newPlaceholders[ph] = Placeholder(
-                    type: defaultType,
-                    source: 'detected',
-                  );
-                  final newEntry = currentEntry.copyWith(
-                    placeholders: newPlaceholders,
-                  );
-                  sheet.entries[ei] = newEntry;
-                  effectiveLogger.info(
-                    'auto-added placeholder: '
-                    'key=${currentEntry.key}, placeholder={$ph}',
-                  );
-                }
-              }
-            }
-          }
+        // 検出と付与はコアの責務。CLI は結果をどう報告するかだけを決める。
+        if (getOption<bool>('auto-detect-placeholders') ?? false) {
+          final outcome = _resolvePlaceholders(
+            sheet,
+            treat: hasOption('treat-undefined-placeholders')
+                ? (getOption<String>('treat-undefined-placeholders') ?? 'warn')
+                : 'warn',
+            defaultType: hasOption('placeholder-default-type')
+                ? (getOption<String>('placeholder-default-type') ?? 'String')
+                : 'String',
+            effectiveLogger: effectiveLogger,
+          );
+          sheet = outcome.sheet;
+          if (outcome.abort) return 1;
         }
 
         final effectiveSheetName =
@@ -236,6 +186,49 @@ class ExportRunner {
       _emitError(msg, effectiveLogger);
       return 1;
     }
+  }
+
+  /// プレースホルダを解決し、`--treat-undefined-placeholders` に従って報告する。
+  ///
+  /// `abort` が `true` のとき、呼び出し側は終了コード `1` で中断する。
+  ({LocalizationSheet sheet, bool abort}) _resolvePlaceholders(
+    LocalizationSheet sheet, {
+    required String treat,
+    required String defaultType,
+    required Logger effectiveLogger,
+  }) {
+    final resolution = const PlaceholderResolver().resolve(
+      sheet,
+      addUndeclared: treat == 'add',
+      defaultType: defaultType,
+    );
+
+    if (treat == 'error' && resolution.undeclared.isNotEmpty) {
+      final first = resolution.undeclared.first;
+      _emitError(
+        'Undefined placeholder detected: '
+        'key=${first.key}, locale=${first.locale}, '
+        'placeholder={${first.name}}',
+        effectiveLogger,
+      );
+      return (sheet: resolution.sheet, abort: true);
+    }
+
+    for (final finding in resolution.undeclared) {
+      if (treat == 'warn') {
+        effectiveLogger.warn(
+          'key=${finding.key}, locale=${finding.locale}, '
+          'placeholder={${finding.name}} not declared',
+        );
+      } else if (treat == 'add') {
+        effectiveLogger.info(
+          'auto-added placeholder: '
+          'key=${finding.key}, placeholder={${finding.name}}',
+        );
+      }
+    }
+
+    return (sheet: resolution.sheet, abort: false);
   }
 
   Logger _buildEffectiveLogger(ArgResults argResults) {

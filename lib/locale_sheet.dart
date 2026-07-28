@@ -9,6 +9,7 @@ import 'package:locale_sheet/src/exporters/exporter.dart'
 export 'src/cli/cli.dart';
 export 'src/core/model.dart';
 export 'src/core/parser.dart';
+export 'src/core/placeholder_resolver.dart';
 export 'src/exporters/arb_exporter.dart';
 export 'src/exporters/exporter.dart';
 
