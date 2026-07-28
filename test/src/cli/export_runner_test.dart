@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:args/args.dart';
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 import 'package:locale_sheet/src/cli/export_runner.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
 import 'package:test/test.dart';
@@ -117,7 +118,7 @@ void main() {
     }
   });
 
-  test('returns 64 when format unsupported', () async {
+  test('returns EX_USAGE when format unsupported', () async {
     final logger = TestLogger();
     final sheet = LocalizationSheet(locales: const ['en'], entries: []);
     final parser = _FakeParser(sheet);
@@ -142,7 +143,7 @@ void main() {
       );
 
       final res = await runner.run(args);
-      expect(res, equals(64));
+      expect(res, equals(exitUsage));
       expect(logger.errors, isNotEmpty);
       expect(logger.errors.first, contains('Unsupported format'));
     } finally {
@@ -150,7 +151,7 @@ void main() {
     }
   });
 
-  test('returns 64 when sheet not found', () async {
+  test('returns EX_DATAERR when sheet not found', () async {
     final logger = TestLogger();
     final parser = _ThrowingParser('Missing', ['SheetA', 'SheetB']);
     final exporter = _FakeExporter();
@@ -177,7 +178,7 @@ void main() {
       );
 
       final res = await runner.run(args);
-      expect(res, equals(64));
+      expect(res, equals(exitDataError));
       expect(logger.errors.first, contains('Missing'));
       expect(logger.errors.first, contains('SheetA'));
     } finally {
@@ -185,7 +186,7 @@ void main() {
     }
   });
 
-  test('returns 64 when provided default-locale is invalid', () async {
+  test('returns EX_DATAERR when provided default-locale is invalid', () async {
     final logger = TestLogger();
     final sheet = LocalizationSheet(locales: const ['ja'], entries: []);
     final parser = _FakeParser(sheet);
@@ -213,14 +214,14 @@ void main() {
       );
 
       final res = await runner.run(args);
-      expect(res, equals(64));
+      expect(res, equals(exitDataError));
       expect(logger.errors.first, contains('Specified default-locale'));
     } finally {
       await tmp.delete();
     }
   });
 
-  test('returns 1 when parser throws FormatException', () async {
+  test('returns EX_DATAERR when parser throws FormatException', () async {
     final logger = TestLogger();
     final parser = _FormatThrowingParser();
     final exporter = _FakeExporter();
@@ -245,8 +246,8 @@ void main() {
       );
 
       final res = await runner.run(args);
-      expect(res, equals(1));
-      expect(logger.errors.first, contains('An error occurred'));
+      expect(res, equals(exitDataError));
+      expect(logger.errors.first, contains('Invalid input'));
     } finally {
       await tmp.delete();
     }
@@ -345,7 +346,7 @@ void main() {
 
   /// ロケール列が1つも無い場合に、成功扱いにせず終了コード64を返すことを検証
   /// Arrange-Act-Assertパターン
-  test('returns 64 when the sheet has no locale columns', () async {
+  test('returns EX_DATAERR when the sheet has no locale columns', () async {
     // Arrange: key 以外の列はあるが、どれもロケールとして採用されなかった
     final logger = TestLogger();
     final sheet = LocalizationSheet(
@@ -379,7 +380,7 @@ void main() {
       final res = await runner.run(args);
 
       // Assert: エクスポートは行われず、無視した列と回避策が示される
-      expect(res, equals(64));
+      expect(res, equals(exitDataError));
       expect(exporter.lastSheet, isNull);
       final err = logger.errors.join('\n');
       expect(err, contains('No locale columns found'));
@@ -423,7 +424,7 @@ void main() {
         final res = await runner.run(args);
 
         // Assert
-        expect(res, equals(64));
+        expect(res, equals(exitDataError));
         expect(
           logger.errors.join('\n'),
           contains('no columns besides "key"'),
@@ -809,7 +810,7 @@ void main() {
   /// treat=error で未定義プレースホルダを検出した場合に
   /// 終了コード1で中断し、エクスポートが行われないことを検証
   /// Arrange-Act-Assertパターン
-  test('auto-detect error aborts with exit code 1 before exporting', () async {
+  test('auto-detect error aborts with EX_DATAERR before exporting', () async {
     // Arrange
     final logger = TestLogger();
     final entry = LocalizationEntry('items_count', const {
@@ -847,7 +848,7 @@ void main() {
       final res = await runner.run(args);
 
       // Assert: 中断されるためエクスポーターは呼ばれない
-      expect(res, equals(1));
+      expect(res, equals(exitDataError));
       expect(
         logger.errors.any(
           (s) => s.contains('Undefined placeholder detected'),
@@ -937,7 +938,7 @@ void main() {
     final res = await runner.run(args);
 
     // Assert
-    expect(res, equals(1));
+    expect(res, equals(exitNoInput));
   });
 
   test('auto-detect ignore does not log warning and does not add', () async {

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 
 Future<void> main(List<String> arguments) async {
   final runner = CommandRunner<int>(
@@ -16,14 +17,22 @@ Future<void> main(List<String> arguments) async {
   // `--help` のように明示的に要求された場合は、下の通常経路で 0 を返す。
   if (arguments.isEmpty) {
     stderr.writeln(runner.usage);
-    exit(64);
+    exit(exitUsage);
   }
 
   try {
     final result = await runner.run(arguments);
-    if (result is int && result != 0) exit(result);
+    if (result is int && result != exitSuccess) exit(result);
   } on UsageException catch (e) {
     stderr.writeln(e);
-    exit(64);
+    exit(exitUsage);
+  } on Object catch (e, stackTrace) {
+    // ここに来るのは想定外の失敗（`Error` を含む）。握り潰さずスタック
+    // トレースを出したうえで、文書化された終了コードで終える。
+    // 何も出さずに 255 で落ちると、利用者は原因も区分も分からない。
+    stderr
+      ..writeln('Unexpected error: $e')
+      ..writeln(stackTrace);
+    exit(exitSoftware);
   }
 }

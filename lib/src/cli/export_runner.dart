@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:args/args.dart';
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 import 'package:locale_sheet/src/cli/logger.dart';
 
 /// Encapsulates the core export flow so the `ExportCommand` can remain thin.
@@ -50,11 +51,37 @@ class ExportRunner {
     final exporter = exporters[format];
     if (exporter == null) {
       _emitError('Unsupported format: $format', effectiveLogger);
-      return 64;
+      return exitUsage;
+    }
+
+    // 入力を見ずに判断できる誤りはここで弾き、利用方法の誤りとして扱う。
+    // 1列目は必ずキー列なので、説明列に `key` を指定することはあり得ない。
+    final describedBy = _reportedValue<String>(
+      argResults,
+      'description-header',
+    );
+    if (describedBy != null && describedBy.trim().toLowerCase() == 'key') {
+      _emitError(
+        "--description-header cannot be 'key'; "
+        'the first column is always the key column.',
+        effectiveLogger,
+      );
+      return exitUsage;
+    }
+
+    final Uint8List bytes;
+    try {
+      bytes = await File(inputPath).readAsBytes();
+    } on FileSystemException catch (e) {
+      final detail = e.osError?.message ?? e.message;
+      _emitError(
+        'Cannot read input file "$inputPath": $detail',
+        effectiveLogger,
+      );
+      return exitNoInput;
     }
 
     try {
-      final bytes = await File(inputPath).readAsBytes();
       final prepared = _prepareSheet(argResults, bytes, effectiveLogger);
       if (prepared.exitCode != null) return prepared.exitCode!;
       final sheet = prepared.sheet!;
@@ -65,17 +92,28 @@ class ExportRunner {
         effectiveLogger,
       );
       if (defaultLocale == null) {
-        return 64;
+        return exitDataError;
       }
 
       effectiveLogger.infoDefaultLocale(defaultLocale);
 
       await exporter.export(sheet, outDir, defaultLocale: defaultLocale);
       effectiveLogger.infoResult(format, outDir);
-      return 0;
+      return exitSuccess;
+    } on FormatException catch (e) {
+      // 入力の内容が仕様を満たさない（ヘッダ、ロケールタグなど）。
+      _emitError('Invalid input: ${e.message}', effectiveLogger);
+      return exitDataError;
+    } on FileSystemException catch (e) {
+      // ここまで来ていれば入力は読めているので、書き出し側の失敗。
+      _emitError(
+        'Cannot write output to "$outDir": ${e.osError?.message ?? e.message}',
+        effectiveLogger,
+      );
+      return exitCantCreate;
     } on Exception catch (e) {
-      _emitError('An error occurred: $e', effectiveLogger);
-      return 1;
+      _emitError('Unexpected error: $e', effectiveLogger);
+      return exitSoftware;
     }
   }
 
@@ -143,7 +181,7 @@ class ExportRunner {
         'Available sheets: $available',
         effectiveLogger,
       );
-      return (sheet: null, exitCode: 64);
+      return (sheet: null, exitCode: exitDataError);
     }
 
     effectiveLogger.infoAvailableSheets(parsed.availableSheets);
@@ -173,7 +211,7 @@ class ExportRunner {
         effectiveLogger: effectiveLogger,
       );
       sheet = outcome.sheet;
-      if (outcome.abort) return (sheet: null, exitCode: 1);
+      if (outcome.abort) return (sheet: null, exitCode: exitDataError);
     }
 
     // どの列がロケールとして扱われ、どの列が外されたかを常に示す。
@@ -198,7 +236,7 @@ class ExportRunner {
         'No locale columns found in sheet "$effectiveSheetName". $hint',
         effectiveLogger,
       );
-      return (sheet: null, exitCode: 64);
+      return (sheet: null, exitCode: exitDataError);
     }
 
     return (sheet: sheet, exitCode: null);
