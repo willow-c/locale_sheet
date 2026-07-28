@@ -19,6 +19,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # example/*.xlsx は Git LFS 管理（.gitattributes）。
+          # 既定ではポインタファイルのままチェックアウトされ、実ファイルを
+          # 読む e2e テストが解析に失敗するため実体を取得する。
+          lfs: true
       
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
