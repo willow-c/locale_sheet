@@ -18,6 +18,8 @@ class ExportRunner {
   });
 
   /// Logger used to emit user-facing messages.
+  ///
+  /// `Logger` は公開 API ではありません（ADR-16 を参照）。
   final Logger logger;
 
   /// Parser used to read Excel bytes into an internal sheet model.

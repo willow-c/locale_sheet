@@ -9,6 +9,15 @@ class ExportCommand extends Command<int> {
   /// Create a new `ExportCommand`.
   ///
   /// Optional dependencies can be injected for testing.
+  ///
+  /// `logger` はテストのための内部的な差し替え口です。`Logger` 型は公開
+  /// バレル（`package:locale_sheet/locale_sheet.dart`）から export しておらず、
+  /// 公開 API ではありません。出力の差し替えは想定された使い方ではないため、
+  /// この引数に依存しないでください（ADR-16 を参照）。
+  ///
+  /// ライブラリとして使う場合は、CLI を経由せず `convertExcelToArb` や
+  /// `ExcelParser` / `ArbExporter` を直接呼んでください。これらはロガーを
+  /// 必要とせず、出力は戻り値とファイルだけです。
   ExportCommand({
     Logger? logger,
     ExcelParser? parser,
