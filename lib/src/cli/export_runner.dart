@@ -60,8 +60,8 @@ class ExportRunner {
         : null;
     final autoDetect = getOption<bool>('auto-detect-placeholders') ?? false;
     if (treatOption != null && !autoDetect) {
-      effectiveLogger.info(
-        'WARNING: --treat-undefined-placeholders was provided but '
+      effectiveLogger.warn(
+        '--treat-undefined-placeholders was provided but '
         '--auto-detect-placeholders is not set; treat option will be ignored.',
       );
     }
@@ -111,8 +111,8 @@ class ExportRunner {
         // export (per locale, last non-empty cell wins), which can mix values
         // from different rows. Warn so the user can fix the sheet.
         for (final key in sheet.duplicateKeys) {
-          effectiveLogger.info(
-            'WARNING: duplicate key "$key" found; later rows override '
+          effectiveLogger.warn(
+            'duplicate key "$key" found; later rows override '
             'earlier ones per locale.',
           );
         }
@@ -140,8 +140,8 @@ class ExportRunner {
                 if (currentEntry.placeholders.containsKey(ph)) continue;
 
                 if (treat == 'warn') {
-                  effectiveLogger.info(
-                    'WARNING: key=${currentEntry.key}, locale=$locale, '
+                  effectiveLogger.warn(
+                    'key=${currentEntry.key}, locale=$locale, '
                     'placeholder={$ph} not declared',
                   );
                 } else if (treat == 'error') {
@@ -173,7 +173,7 @@ class ExportRunner {
                   );
                   sheet.entries[ei] = newEntry;
                   effectiveLogger.info(
-                    'INFO: auto-added placeholder: '
+                    'auto-added placeholder: '
                     'key=${currentEntry.key}, placeholder={$ph}',
                   );
                 }

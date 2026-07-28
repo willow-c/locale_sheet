@@ -131,6 +131,8 @@ See the `example/` directory for sample XLSX files and example usage.
 - `64` — argument error / UsageException, unsupported format, sheet not found, `--default-locale` not present in the sheet, or no locale columns at all
 - `1` — runtime error (file I/O, parsing errors, etc.)
 
+Informational output goes to stdout; warnings and errors go to stderr. Warnings (duplicate keys, undeclared placeholders, options that will have no effect) do not change the exit code.
+
 If the sheet has no locale columns the command fails rather than reporting success without writing anything. The message lists the columns that were ignored so you can spot a mistyped header, and points at `--locales`.
 
 ## Troubleshooting (quick)
