@@ -3,16 +3,9 @@
 ## vx.x.x 20xx-xx-xx
 
 - feat: warn when the same key appears in more than one row. The CLI now logs a `WARNING` per duplicated key, and `LocalizationSheet.duplicateKeys` exposes the list for library users. Export behavior is unchanged (later rows still win per locale).
-- docs: refresh agent-facing docs for direct-edit agents — replace the patch-attachment workflow and the `apply_patch` reference in `AGENTS.md` / `.github/pull_request_template.md` with a PR-diff-based one, align the commit convention with Conventional Commits as actually used, and correct the folder listing (`tool/` never existed).
-- docs: add `CLAUDE.md` as a thin entry point that imports `AGENTS.md`, so the existing policy is loaded without duplicating it.
-- docs: fix stale `docs/` paths in `doc/developer/README.md` and replace the "CI を追加する" proposal with a description of the CI that now exists.
 - docs: fix the Quick Start dependency snippet in `README.md` / `README_ja.md` — `locale_sheet` was not indented under `dev_dependencies`, so the snippet was invalid YAML as written, and the version was still `^0.4.0`.
 - docs: document the `--color` / `--no-color` option, which was missing from the CLI option list in both READMEs.
 - docs: sync `example/README.md` / `example/README_ja.md` with the actual `sample.xlsx` — add the missing `likeFoodFluit` row (the placeholder sample) and replace the stale "columns: key, en, ja" summary.
-- docs: update the Excel format notes in `doc/developer/README.md` to match the parser since 0.2.0 (locale columns are selected by `isValidLocaleTag`, non-locale columns are ignored, description column handling), and record that `dart pub global activate coverage` is required for `make coverage`.
-- docs: add `doc/requirements.md` — a single requirements document with numbered IDs (`FR-xx` / `NFR-xx`) and pointers to the implementation and tests. Requirements were previously spread across the READMEs, `example/README.md`, the developer notes, the changelog, and the code itself.
-- docs: link the requirements document from `doc/developer/README.md`.
-- chore: add `.claude/settings.json` allowlisting read-only dev commands, and gitignore `.claude/settings.local.json`.
 - chore: drop the `path` dependency, which was declared in `pubspec.yaml` but never imported anywhere in the package.
 - docs: correct the `--description-header` description in `README.md` / `README_ja.md` — matching ignores surrounding whitespace and is case-insensitive, so calling it an "exact" match was wrong.
 

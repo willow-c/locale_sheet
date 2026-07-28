@@ -27,3 +27,4 @@ CI（[.github/workflows/verify.yml](.github/workflows/verify.yml)）も同じ `s
 - ソースを変更したらテスト・静的解析・カバレッジを実行し、結果を PR 本文に記載する（AGENTS.md「コード変更ポリシー」）。
 - テストは `lib/src/` と 1:1 で配置し、AAA パターン（`// Arrange` / `// Act` / `// Assert`）と日本語の意図コメント（`///`）を付ける。
 - 外部仕様を変えたら `README.md` と `README_ja.md` の両方を更新し、`CHANGELOG.md` に追記する（版と日付は publish 時に確定するため、PR 時点では `vx.x.x 20xx-xx-xx` をプレースホルダとして使う）。
+- `CHANGELOG.md` は pub.dev に公開される利用者向けの文書。`AGENTS.md` / `CLAUDE.md` / `doc/` の更新や CI・設定の変更は書かない（AGENTS.md「ドキュメントと履歴管理」を参照）。
