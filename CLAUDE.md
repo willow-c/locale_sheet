@@ -28,3 +28,4 @@ CI（[.github/workflows/verify.yml](.github/workflows/verify.yml)）も同じ `s
 - テストは `lib/src/` と 1:1 で配置し、AAA パターン（`// Arrange` / `// Act` / `// Assert`）と日本語の意図コメント（`///`）を付ける。
 - 外部仕様を変えたら `README.md` と `README_ja.md` の両方を更新し、`CHANGELOG.md` に追記する（版と日付は publish 時に確定するため、PR 時点では `vx.x.x 20xx-xx-xx` をプレースホルダとして使う）。
 - `CHANGELOG.md` は pub.dev に公開される利用者向けの文書。`AGENTS.md` / `CLAUDE.md` / `doc/` の更新や CI・設定の変更は書かない（AGENTS.md「ドキュメントと履歴管理」を参照）。
+- **設計判断をしたら [doc/decisions.md](doc/decisions.md) に `ADR-xx` として記録する。** 複数案を比較した、明らかな案をあえて採らなかった、意図的に制限を受け入れた、といった場合が対象。会話や PR 本文だけに残すと別のセッションから参照できず、同じ検討が繰り返される。既存の判断を調べるときも、実装に入る前にまず本書を読むこと（AGENTS.md「設計判断の記録」を参照）。
