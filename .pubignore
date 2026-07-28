@@ -51,10 +51,27 @@ example/out/
 
 # ---- 公開アーカイブにのみ不要なもの ----
 
+# 公開アーカイブは「利用者がパッケージを使う・評価するために必要なもの」に絞る。
+# pub.dev のスコアが要求するのは pubspec.yaml / LICENSE / README / CHANGELOG /
+# 実例（example/）/ lib/ であり、以下はいずれも該当しない。
+# CHANGELOG に記載しない種類の変更と同じ線引き（AGENTS.md「ドキュメントと履歴管理」）。
+
 # 開発者・エージェント向けドキュメント。
-# 利用者向けの情報は README.md / README_ja.md / example/ に集約しており、
-# 以下はリポジトリで参照するもの。CHANGELOG に記載しない種類の文書と
-# 同じ線引きで公開対象からも外す（AGENTS.md「ドキュメントと履歴管理」を参照）。
+# 利用者向けの情報は README.md / README_ja.md / example/ に集約している。
 AGENTS.md
 CLAUDE.md
 doc/
+
+# 開発用スクリプトとその呼び出し口。リポジトリ内でのみ使う。
+scripts/
+Makefile
+make.ps1
+
+# テストコード。pub.dev はテストを実行しない（スコアリングは pana による
+# 静的解析のみ）ため、同梱しても利用者にも pub.dev にも利用されない。
+test/
+
+# 静的解析設定。pana は自前の設定で解析するため同梱は不要。
+# 同梱すると very_good_analysis のルールが pub.dev 側の解析にも上乗せされ、
+# ルール追加でスコアが下がる余地が生まれる。
+analysis_options.yaml
