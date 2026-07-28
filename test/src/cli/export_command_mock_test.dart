@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:args/command_runner.dart';
 import 'package:locale_sheet/locale_sheet.dart';
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
@@ -124,8 +125,8 @@ void main() {
         'description',
       ]);
 
-      // Assert: parser throws FormatException, CLI should return 1
-      expect(res, equals(1));
+      // Assert: 入力の内容と指定が噛み合わないため EX_DATAERR
+      expect(res, equals(exitDataError));
       expect(logger.errors, isNotEmpty);
     } finally {
       await tmp.delete();
@@ -292,7 +293,7 @@ void main() {
         ]);
 
         // Assert
-        expect(res, equals(64));
+        expect(res, equals(exitDataError));
         expect(logger.errors.first, contains('Specified default-locale'));
       } finally {
         await tmp.delete();
@@ -335,9 +336,9 @@ void main() {
         'outdir',
       ]);
 
-      // Assert
-      expect(res, equals(1));
-      expect(logger.errors.first, contains('An error occurred'));
+      // Assert: エクスポータが投げた想定外の例外は内部エラーとして扱う
+      expect(res, equals(exitSoftware));
+      expect(logger.errors.first, contains('Unexpected error'));
     } finally {
       await tmp.delete();
     }
@@ -388,7 +389,7 @@ void main() {
         ]);
 
         // Assert
-        expect(res, 64);
+        expect(res, exitDataError);
         expect(logger.errors, isNotEmpty);
         expect(logger.errors.first, contains(missingName));
         expect(logger.errors.first, contains('SheetA'));

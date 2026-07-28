@@ -1,5 +1,6 @@
 import 'package:args/command_runner.dart';
 import 'package:locale_sheet/src/cli/cli.dart';
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 import 'package:test/test.dart';
 import '../../test_helpers/logger.dart';
 
@@ -22,7 +23,7 @@ void main() {
       // the command should be resilient against.
       final result = await cmd.run();
       // Assert
-      expect(result, 64);
+      expect(result, exitUsage);
       expect(logger.errors.first, contains('Failed to parse arguments'));
     });
 
@@ -53,7 +54,9 @@ void main() {
       }
     });
 
-    test('non-existent input file returns 1 and logs error', () async {
+    /// 入力ファイルが開けない場合にEX_NOINPUT(66)を返すことを検証
+    /// Arrange-Act-Assertパターン
+    test('non-existent input file returns EX_NOINPUT and logs error', () async {
       // Arrange
       const nonExistentFile = 'path/to/non_existent_file.xlsx';
 
@@ -61,9 +64,9 @@ void main() {
       final result = await runner.run(['export', '--input', nonExistentFile]);
 
       // Assert
-      expect(result, 1);
+      expect(result, exitNoInput);
       expect(logger.errors, isNotEmpty);
-      expect(logger.errors.first, contains('An error occurred'));
+      expect(logger.errors.first, contains('Cannot read input file'));
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:locale_sheet/src/cli/exit_codes.dart';
 import 'package:test/test.dart';
 
 /// `bin/locale_sheet.dart` を実際にプロセスとして起動し、終了コードを検証する。
@@ -47,9 +48,9 @@ void main() {
     expect(result.exitCode, 64);
   });
 
-  /// 入力ファイルが存在しない場合に終了コード1になることを検証
+  /// 入力ファイルが存在しない場合にEX_NOINPUT(66)になることを検証
   /// Arrange-Act-Assertパターン
-  test('exits with 1 when the input file does not exist', () async {
+  test('exits with EX_NOINPUT when the input file does not exist', () async {
     // Arrange & Act
     final result = await runCli([
       'export',
@@ -58,8 +59,25 @@ void main() {
       '--no-color',
     ]);
 
-    // Assert: 引数の誤りではなく実行時の失敗
-    expect(result.exitCode, 1);
+    // Assert: 引数の誤りではなく入力が開けない失敗
+    expect(result.exitCode, exitNoInput);
+  });
+
+  /// 入力データが仕様を満たさない場合にEX_DATAERR(65)になることを検証
+  /// Arrange-Act-Assertパターン
+  test('exits with EX_DATAERR when a named sheet is missing', () async {
+    // Arrange & Act
+    final result = await runCli([
+      'export',
+      '--input',
+      'example/sample.xlsx',
+      '--sheet-name',
+      'NoSuchSheet',
+      '--no-color',
+    ]);
+
+    // Assert
+    expect(result.exitCode, exitDataError);
   });
 
   /// 正常に変換できた場合に終了コード0になり、ARBが生成されることを検証

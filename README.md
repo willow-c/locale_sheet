@@ -130,8 +130,18 @@ See the `example/` directory for sample XLSX files and example usage.
 
 ## Exit Codes & Error Handling
 
-- `64` — argument error / UsageException, no command given, unsupported format, sheet not found, `--default-locale` not present in the sheet, or no locale columns at all. Asking for help explicitly (`--help`, `help`) exits `0`.
-- `1` — runtime error (file I/O, parsing errors, etc.)
+Exit codes follow the BSD `sysexits.h` convention. `1` is not used.
+
+| Code | Name | When |
+| --- | --- | --- |
+| `0` | — | Success, including an explicit help request (`--help`, `help`) |
+| `64` | `EX_USAGE` | Command line error: unknown or missing options, no command given, unsupported format, `--description-header key` |
+| `65` | `EX_DATAERR` | The input does not match what you asked for: a named sheet, locale or description header is not in the file, `--default-locale` is not among the sheet's locales, no locale columns at all, the header row does not start with `key`, two locale columns map to the same file, or a locale tag is unusable as a filename |
+| `66` | `EX_NOINPUT` | The input file cannot be read |
+| `70` | `EX_SOFTWARE` | Unexpected internal error; a stack trace is printed |
+| `73` | `EX_CANTCREAT` | The output cannot be written |
+
+The line between `64` and `65` is whether the mistake can be seen without opening the input file.
 
 Informational output goes to stdout; warnings and errors go to stderr. Warnings (duplicate keys, undeclared placeholders, options that will have no effect) do not change the exit code.
 
