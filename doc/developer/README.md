@@ -93,6 +93,21 @@ fvm dart pub global activate coverage
 
 名前による全体検索は行わない。出力先は利用者が `--out` で自由に指定できるため、`*.arb` や `l10n` をリポジトリ全体から掃くと、利用者の作業結果まで消えてしまう。
 
+## リリース手順
+
+`pub.dev` へ publish する際の手順。**バージョン番号は3箇所に散っている**ため、まとめて更新する。
+
+1. `pubspec.yaml` の `version` を上げる。
+2. `CHANGELOG.md` の `vx.x.x 20xx-xx-xx` を実際の版と日付に確定する。
+3. **`README.md` と `README_ja.md` の Quick Start にある依存指定（`locale_sheet: ^x.y.z`）を更新する。**
+4. `make verify`（Windows は `make.ps1 verify`）を通す。
+5. `fvm dart pub publish --dry-run` を実行し、`Package has 0 warnings.` を確認する。同梱ファイルが `.pubignore` の意図どおりかもここで見る。
+6. publish する。
+
+手順3は忘れやすい。**0.1.1 は Quick Start のバージョン追従が漏れたことだけを修正するリリースだった**（CHANGELOG の 0.1.1 の項を参照）。同じ漏れは #35 でも見つかっている。
+
+版の上げ幅は、CHANGELOG の未リリース分に破壊的変更（終了コード、公開 API のシグネチャ、既定の挙動の変更）が含まれるかで判断する。
+
 ## ExportCommand の注入方法（開発者向けサンプル）
 
 `ExportCommand` は次の依存をコンストラクタで差し替え可能です:
