@@ -130,7 +130,7 @@ See the `example/` directory for sample XLSX files and example usage.
 
 ## Exit Codes & Error Handling
 
-- `64` — argument error / UsageException, unsupported format, sheet not found, `--default-locale` not present in the sheet, or no locale columns at all
+- `64` — argument error / UsageException, no command given, unsupported format, sheet not found, `--default-locale` not present in the sheet, or no locale columns at all. Asking for help explicitly (`--help`, `help`) exits `0`.
 - `1` — runtime error (file I/O, parsing errors, etc.)
 
 Informational output goes to stdout; warnings and errors go to stderr. Warnings (duplicate keys, undeclared placeholders, options that will have no effect) do not change the exit code.
