@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/model.dart';
 import 'package:locale_sheet/src/core/model_helpers.dart';
+import 'package:meta/meta.dart';
 
 /// XLSX のバイトを解析して [LocalizationSheet] に変換します。
 ///
@@ -32,6 +33,29 @@ class SheetNotFoundException implements Exception {
   }
 }
 
+/// 1回の解析で得られた、シートとワークブックの情報。
+@immutable
+class ParsedWorkbook {
+  /// Create a parse result.
+  const ParsedWorkbook({
+    required this.sheet,
+    required this.sheetName,
+    required this.availableSheets,
+  });
+
+  /// 解析されたシート。
+  final LocalizationSheet sheet;
+
+  /// 実際に解析したシートの名前。
+  ///
+  /// シート名を指定しなかった場合は、採用された最初のシートの名前が入ります。
+  /// 呼び出し側が「どれが最初のシートだったか」を推測し直す必要はありません。
+  final String sheetName;
+
+  /// ワークブックに含まれるすべてのシート名。
+  final List<String> availableSheets;
+}
+
 /// Excel XLSX parser.
 ///
 /// Provides utilities to parse XLSX byte streams into the internal
@@ -55,6 +79,23 @@ class ExcelParser {
 
   /// Parse XLSX bytes and return a [LocalizationSheet].
   ///
+  /// ワークブックの情報（実際に解析したシート名、含まれるシート名の一覧）も
+  /// 必要な場合は [parseWorkbook] を使ってください。本メソッドはその結果から
+  /// シートだけを取り出す薄い包みです。
+  LocalizationSheet parse(
+    Uint8List bytes, {
+    String? sheetName,
+    String? descriptionHeader,
+    List<String>? locales,
+  }) => parseWorkbook(
+    bytes,
+    sheetName: sheetName,
+    descriptionHeader: descriptionHeader,
+    locales: locales,
+  ).sheet;
+
+  /// Parse XLSX bytes and return the sheet together with workbook information.
+  ///
   /// If [sheetName] is provided, attempts to read that sheet. If not
   /// provided, uses the first sheet found.
   ///
@@ -68,7 +109,11 @@ class ExcelParser {
   /// (`isValidLocaleTag`) as before. That check is permissive — common column
   /// names such as `memo` also qualify — so the resulting selection and the
   /// ignored headers are both reported on [LocalizationSheet].
-  LocalizationSheet parse(
+  ///
+  /// ワークブックのデコードは1回だけ行います。シート名の一覧を得るために
+  /// 別途 [getSheetNames] を呼ぶと、同じバイト列をもう一度デコードすること
+  /// になるため、両方が必要な場合は本メソッドの結果を使ってください。
+  ParsedWorkbook parseWorkbook(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
@@ -93,10 +138,16 @@ class ExcelParser {
 
     final table = excel.tables[selectedSheetName]!;
 
+    final availableSheets = excel.tables.keys.toList();
+
     final rows = table.rows;
     final maxRows = rows.length;
     if (maxRows == 0) {
-      return LocalizationSheet(locales: [], entries: []);
+      return ParsedWorkbook(
+        sheet: LocalizationSheet(locales: [], entries: []),
+        sheetName: selectedSheetName,
+        availableSheets: availableSheets,
+      );
     }
 
     // Determine max columns from existing rows for robust handling
@@ -245,10 +296,14 @@ class ExcelParser {
       );
     }
 
-    return LocalizationSheet(
-      locales: selectedLocales,
-      entries: entries,
-      ignoredHeaders: ignoredHeaders,
+    return ParsedWorkbook(
+      sheet: LocalizationSheet(
+        locales: selectedLocales,
+        entries: entries,
+        ignoredHeaders: ignoredHeaders,
+      ),
+      sheetName: selectedSheetName,
+      availableSheets: availableSheets,
     );
   }
 
