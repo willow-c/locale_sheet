@@ -36,35 +36,7 @@ class ExportRunner {
 
     final effectiveLogger = _buildEffectiveLogger(argResults);
 
-    bool hasOption(String name) {
-      try {
-        return argResults.wasParsed(name);
-      } on Object catch (_) {
-        return false;
-      }
-    }
-
-    T? getOption<T>(String name) {
-      try {
-        return argResults[name] as T?;
-      } on Object catch (_) {
-        return null;
-      }
-    }
-
-    // If user specified treat-undefined-placeholders but did not enable
-    // auto-detection, warn that the option will have no effect.
-    final treatOption = hasOption('treat-undefined-placeholders')
-        ? getOption<String>('treat-undefined-placeholders')
-        : null;
-    final autoDetect = getOption<bool>('auto-detect-placeholders') ?? false;
-    if (treatOption != null && !autoDetect) {
-      effectiveLogger.warn(
-        '--treat-undefined-placeholders was provided but '
-        '--auto-detect-placeholders is not set; treat option will be ignored.',
-      );
-    }
-
+    _warnIfTreatOptionHasNoEffect(argResults, effectiveLogger);
     _logHeaderAndOptions(
       argResults,
       effectiveLogger,
@@ -75,97 +47,26 @@ class ExportRunner {
 
     final exporter = exporters[format];
     if (exporter == null) {
-      final msg = 'Unsupported format: $format';
-      _emitError(msg, effectiveLogger);
+      _emitError('Unsupported format: $format', effectiveLogger);
       return 64;
     }
 
     try {
       final bytes = await File(inputPath).readAsBytes();
-
       final sheetListResult = _listAvailableSheets(
         bytes,
         parser,
         effectiveLogger,
       );
 
-      final sheetName = argResults['sheet-name'] as String?;
-      final descriptionHeader = argResults.wasParsed('description-header')
-          ? (argResults['description-header'] as String?)
-          : null;
-      final requestedLocales = hasOption('locales')
-          ? getOption<List<String>>('locales')
-          : null;
-
-      LocalizationSheet sheet;
-      try {
-        sheet = parser.parse(
-          bytes,
-          sheetName: sheetName,
-          descriptionHeader: descriptionHeader,
-          locales: requestedLocales,
-        );
-
-        // Duplicate keys parse successfully but are silently overwritten on
-        // export (per locale, last non-empty cell wins), which can mix values
-        // from different rows. Warn so the user can fix the sheet.
-        for (final key in sheet.duplicateKeys) {
-          effectiveLogger.warn(
-            'duplicate key "$key" found; later rows override '
-            'earlier ones per locale.',
-          );
-        }
-
-        // 検出と付与はコアの責務。CLI は結果をどう報告するかだけを決める。
-        if (getOption<bool>('auto-detect-placeholders') ?? false) {
-          final outcome = _resolvePlaceholders(
-            sheet,
-            treat: hasOption('treat-undefined-placeholders')
-                ? (getOption<String>('treat-undefined-placeholders') ?? 'warn')
-                : 'warn',
-            defaultType: hasOption('placeholder-default-type')
-                ? (getOption<String>('placeholder-default-type') ?? 'String')
-                : 'String',
-            effectiveLogger: effectiveLogger,
-          );
-          sheet = outcome.sheet;
-          if (outcome.abort) return 1;
-        }
-
-        final effectiveSheetName =
-            sheetName ?? _determineEffectiveSheetName(sheetListResult);
-        // どの列がロケールとして扱われ、どの列が外されたかを常に示す。
-        // ロケール判定は緩く、`memo` のような一般的な列名も通るため、
-        // 採用結果を確認できないと誤った ARB が生成されても気付けない。
-        final ignored = sheet.ignoredHeaders.isEmpty
-            ? '(none)'
-            : sheet.ignoredHeaders.join(', ');
-        effectiveLogger
-          ..infoSheetLocales(effectiveSheetName, sheet.locales)
-          ..info('Ignored columns: $ignored');
-
-        // ロケール列が1つも無いとエクスポータは何も書き出さない。
-        // それを成功として報告すると、ヘッダを間違えた利用者が
-        // 「出力が空である」ことに気付けないため、エラーとして扱う。
-        if (sheet.locales.isEmpty) {
-          final hint = sheet.ignoredHeaders.isEmpty
-              ? 'The header row has no columns besides "key".'
-              : 'None of the remaining columns ($ignored) was treated as a '
-                    'locale. Use --locales to name them explicitly.';
-          _emitError(
-            'No locale columns found in sheet "$effectiveSheetName". $hint',
-            effectiveLogger,
-          );
-          return 64;
-        }
-      } on SheetNotFoundException catch (e) {
-        final available = e.availableSheets.join(', ');
-        final msg =
-            'Specified sheet "${e.requestedSheet}" not found. '
-            'Available sheets: $available';
-        _emitError(msg, effectiveLogger);
-        return 64;
-      }
+      final prepared = _prepareSheet(
+        argResults,
+        bytes,
+        sheetListResult,
+        effectiveLogger,
+      );
+      if (prepared.exitCode != null) return prepared.exitCode!;
+      final sheet = prepared.sheet!;
 
       final defaultLocale = _determineDefaultLocale(
         argResults,
@@ -182,10 +83,134 @@ class ExportRunner {
       effectiveLogger.infoResult(format, outDir);
       return 0;
     } on Exception catch (e) {
-      final msg = 'An error occurred: $e';
-      _emitError(msg, effectiveLogger);
+      _emitError('An error occurred: $e', effectiveLogger);
       return 1;
     }
+  }
+
+  /// 縮小した `ArgParser` から得た [ArgResults] でも安全に参照するための判定。
+  ///
+  /// 未定義のオプションを `ArgResults` から読むと例外になる。テストなどでは
+  /// 一部のオプションだけを定義したパーサを使うため、参照前に定義の有無を
+  /// 確認する。例外を握り潰す実装だと、オプション名の綴り間違いのような
+  /// 本当の誤りまで隠れてしまう。
+  bool _isDefined(ArgResults argResults, String name) =>
+      argResults.options.contains(name);
+
+  bool _wasParsed(ArgResults argResults, String name) =>
+      _isDefined(argResults, name) && argResults.wasParsed(name);
+
+  T? _optionOrNull<T>(ArgResults argResults, String name) =>
+      _isDefined(argResults, name) ? argResults[name] as T? : null;
+
+  /// 自動検出を有効にせず未定義時の扱いだけを指定した場合に警告する。
+  void _warnIfTreatOptionHasNoEffect(
+    ArgResults argResults,
+    Logger effectiveLogger,
+  ) {
+    final treatOption = _wasParsed(argResults, 'treat-undefined-placeholders')
+        ? _optionOrNull<String>(argResults, 'treat-undefined-placeholders')
+        : null;
+    final autoDetect =
+        _optionOrNull<bool>(argResults, 'auto-detect-placeholders') ?? false;
+    if (treatOption != null && !autoDetect) {
+      effectiveLogger.warn(
+        '--treat-undefined-placeholders was provided but '
+        '--auto-detect-placeholders is not set; treat option will be ignored.',
+      );
+    }
+  }
+
+  /// シートを解析し、その結果を利用者に報告する。
+  ///
+  /// `exitCode` が非 null のとき、呼び出し側はその値で終了する。
+  /// それ以外の場合は `sheet` に解析結果が入る。
+  ({LocalizationSheet? sheet, int? exitCode}) _prepareSheet(
+    ArgResults argResults,
+    Uint8List bytes,
+    ({List<String> sheets, bool failed}) sheetListResult,
+    Logger effectiveLogger,
+  ) {
+    final sheetName = _optionOrNull<String>(argResults, 'sheet-name');
+    final descriptionHeader = _wasParsed(argResults, 'description-header')
+        ? _optionOrNull<String>(argResults, 'description-header')
+        : null;
+    final requestedLocales = _wasParsed(argResults, 'locales')
+        ? _optionOrNull<List<String>>(argResults, 'locales')
+        : null;
+
+    LocalizationSheet sheet;
+    try {
+      sheet = parser.parse(
+        bytes,
+        sheetName: sheetName,
+        descriptionHeader: descriptionHeader,
+        locales: requestedLocales,
+      );
+    } on SheetNotFoundException catch (e) {
+      final available = e.availableSheets.join(', ');
+      _emitError(
+        'Specified sheet "${e.requestedSheet}" not found. '
+        'Available sheets: $available',
+        effectiveLogger,
+      );
+      return (sheet: null, exitCode: 64);
+    }
+
+    // Duplicate keys parse successfully but are silently overwritten on
+    // export (per locale, last non-empty cell wins), which can mix values
+    // from different rows. Warn so the user can fix the sheet.
+    for (final key in sheet.duplicateKeys) {
+      effectiveLogger.warn(
+        'duplicate key "$key" found; later rows override '
+        'earlier ones per locale.',
+      );
+    }
+
+    // 検出と付与はコアの責務。CLI は結果をどう報告するかだけを決める。
+    if (_optionOrNull<bool>(argResults, 'auto-detect-placeholders') ?? false) {
+      final outcome = _resolvePlaceholders(
+        sheet,
+        treat:
+            _optionOrNull<String>(argResults, 'treat-undefined-placeholders') ??
+            'warn',
+        defaultType:
+            _optionOrNull<String>(argResults, 'placeholder-default-type') ??
+            'String',
+        effectiveLogger: effectiveLogger,
+      );
+      sheet = outcome.sheet;
+      if (outcome.abort) return (sheet: null, exitCode: 1);
+    }
+
+    final effectiveSheetName =
+        sheetName ?? _determineEffectiveSheetName(sheetListResult);
+    // どの列がロケールとして扱われ、どの列が外されたかを常に示す。
+    // ロケール判定は緩く、`memo` のような一般的な列名も通るため、
+    // 採用結果を確認できないと誤った ARB が生成されても気付けない。
+    final ignored = sheet.ignoredHeaders.isEmpty
+        ? '(none)'
+        : sheet.ignoredHeaders.join(', ');
+    effectiveLogger
+      ..infoSheetLocales(effectiveSheetName, sheet.locales)
+      ..info('Ignored columns: $ignored');
+
+    // ロケール列が1つも無いとエクスポータは何も書き出さない。
+    // それを成功として報告すると、ヘッダを間違えた利用者が
+    // 「出力が空である」ことに気付けないため、エラーとして扱う。
+    if (sheet.locales.isEmpty) {
+      final hint = sheet.ignoredHeaders.isEmpty
+          ? 'The header row has no columns besides "key".'
+          : 'None of the remaining columns ($ignored) was treated as a '
+                'locale. Use --locales to name them explicitly.';
+      _emitError(
+        'No locale columns found in sheet "$effectiveSheetName". $hint',
+        effectiveLogger,
+      );
+      return (sheet: null, exitCode: 64);
+    }
+
+    return (sheet: sheet, exitCode: null);
   }
 
   /// プレースホルダを解決し、`--treat-undefined-placeholders` に従って報告する。
@@ -265,17 +290,21 @@ class ExportRunner {
         'input': inputPath,
         'format': format,
         'out': outDir,
-        'sheet-name': argResults.wasParsed('sheet-name')
-            ? argResults['sheet-name'] as String?
-            : null,
-        'default-locale': argResults.wasParsed('default-locale')
-            ? argResults['default-locale'] as String?
-            : null,
-        'description-header': argResults.wasParsed('description-header')
-            ? argResults['description-header'] as String?
-            : null,
+        'sheet-name': _reportedValue<String>(argResults, 'sheet-name'),
+        'default-locale': _reportedValue<String>(argResults, 'default-locale'),
+        'locales': _reportedValue<List<String>>(argResults, 'locales')?.join(
+          ', ',
+        ),
+        'description-header': _reportedValue<String>(
+          argResults,
+          'description-header',
+        ),
       });
   }
+
+  /// 明示的に指定されたオプションの値。未指定・未定義なら `null`。
+  T? _reportedValue<T>(ArgResults argResults, String name) =>
+      _wasParsed(argResults, name) ? _optionOrNull<T>(argResults, name) : null;
 
   /// Result of attempting to list available sheets.
   ///
@@ -321,9 +350,9 @@ class ExportRunner {
     LocalizationSheet sheet,
     Logger effectiveLogger,
   ) {
-    final userProvidedDefault = argResults.wasParsed('default-locale');
+    final userProvidedDefault = _wasParsed(argResults, 'default-locale');
     if (userProvidedDefault) {
-      final requested = argResults['default-locale'] as String?;
+      final requested = _optionOrNull<String>(argResults, 'default-locale');
       if (requested == null || !sheet.locales.contains(requested)) {
         final localesList = sheet.locales.join(', ');
         final message =
