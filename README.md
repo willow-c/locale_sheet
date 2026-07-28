@@ -108,7 +108,7 @@
     - `warn` (default): log a warning for each undefined placeholder.
     - `ignore`: do nothing.
     - `add`: auto-add placeholder metadata to the in-memory model and include it in the emitted ARB (uses `--placeholder-default-type` for `type`).
-    - `error`: abort with exit code `1` on first undefined placeholder.
+    - `error`: abort with exit code `65` (`EX_DATAERR`) on the first undefined placeholder.
   - `--placeholder-default-type`: Default type to assign when auto-adding placeholders (default: `String`).
   - `--color` / `--no-color`: Enable or disable ANSI color in log output (default: enabled). Use `--no-color` when writing logs to a file or a non-TTY.
   - Notes on ARB output and placeholders: when placeholder metadata exists for an entry, the ARB exporter includes a metadata object under `@<key>.placeholders` in the default-locale ARB file. Each placeholder object contains at least a `type` and may include `example` and `source` (e.g. `detected` or `declared`).

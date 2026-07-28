@@ -893,7 +893,7 @@ void main() {
   );
 
   /// treat=error で未定義プレースホルダを検出した場合に
-  /// 終了コード1で中断し、エクスポートが行われないことを検証
+  /// EX_DATAERR(65)で中断し、エクスポートが行われないことを検証
   /// Arrange-Act-Assertパターン
   test('auto-detect error aborts with EX_DATAERR before exporting', () async {
     // Arrange
@@ -997,7 +997,7 @@ void main() {
   });
 
   /// ロガーを差し替えていない場合（既定の SimpleLogger）でも
-  /// エラーが報告され終了コード1を返すことを検証
+  /// エラーが報告され、入力を読めないため EX_NOINPUT(66) を返すことを検証
   /// Arrange-Act-Assertパターン
   test('reports errors through the default SimpleLogger', () async {
     // Arrange: SimpleLogger を渡すと内部で色設定を反映した別インスタンスが

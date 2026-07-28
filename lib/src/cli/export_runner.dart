@@ -244,7 +244,7 @@ class ExportRunner {
 
   /// プレースホルダを解決し、`--treat-undefined-placeholders` に従って報告する。
   ///
-  /// `abort` が `true` のとき、呼び出し側は終了コード `1` で中断する。
+  /// `abort` が `true` のとき、呼び出し側は `exitDataError` で中断する。
   ({LocalizationSheet sheet, bool abort}) _resolvePlaceholders(
     LocalizationSheet sheet, {
     required String treat,
