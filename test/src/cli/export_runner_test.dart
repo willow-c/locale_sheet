@@ -378,6 +378,56 @@ void main() {
     },
   );
 
+  /// 一部のオプションが定義されていないArgParserから得たArgResultsでも
+  /// 例外にならず、未指定として扱われることを検証
+  /// Arrange-Act-Assertパターン
+  test(
+    'tolerates an ArgResults from a parser without optional options',
+    () async {
+      // Arrange: プレースホルダ系や locales を一切定義していない最小のパーサ
+      final minimal = ArgParser()
+        ..addOption('input')
+        ..addOption('format')
+        ..addOption('out')
+        ..addFlag('color', defaultsTo: true);
+
+      final logger = TestLogger();
+      final sheet = LocalizationSheet(locales: const ['en'], entries: []);
+      final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+      final exporter = _FakeExporter();
+
+      final tmp = File('test/tmp_export_runner_minimal_parser.xlsx');
+      await tmp.writeAsBytes([0]);
+
+      try {
+        final args = minimal.parse([
+          '--input',
+          tmp.path,
+          '--format',
+          'arb',
+          '--out',
+          'outdir',
+        ]);
+
+        final runner = ExportRunner(
+          logger: logger,
+          parser: parser,
+          exporters: {'arb': exporter},
+        );
+
+        // Act
+        final res = await runner.run(args);
+
+        // Assert: 未定義のオプションは未指定として扱われ、通常どおり完了する
+        expect(res, equals(0));
+        expect(exporter.lastSheet, isNotNull);
+        expect(logger.warnings, isEmpty);
+      } finally {
+        await tmp.delete();
+      }
+    },
+  );
+
   /// ロケール列が1つも無い場合に、成功扱いにせず終了コード64を返すことを検証
   /// Arrange-Act-Assertパターン
   test('returns 64 when the sheet has no locale columns', () async {
