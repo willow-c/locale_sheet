@@ -1,0 +1,60 @@
+# pub.dev へ公開するアーカイブから除外するファイル。
+#
+# 注意: `.pubignore` が存在するディレクトリでは、公開時に `.gitignore` ではなく
+# 本ファイルが使われます（`.gitignore` のルールは参照されません）。
+# そのため `.gitignore` の内容もここに複製しています。
+# `.gitignore` を変更した際は本ファイルの前半も併せて更新してください。
+
+# ---- .gitignore と同じ内容（公開時にも除外する） ----
+
+# Files and directories created by pub
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
+# Directory created by dartdoc
+doc/api/
+
+# dotenv environment variables file
+.env*
+
+# Avoid committing generated Javascript files:
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# FVM local SDK folder
+.fvm/
+
+# Coverage outputs
+coverage/
+
+# Generated localization output
+*.arb
+lib/l10n/
+example/out/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# ---- 公開アーカイブにのみ不要なもの ----
+
+# 開発者・エージェント向けドキュメント。
+# 利用者向けの情報は README.md / README_ja.md / example/ に集約しており、
+# 以下はリポジトリで参照するもの。CHANGELOG に記載しない種類の文書と
+# 同じ線引きで公開対象からも外す（AGENTS.md「ドキュメントと履歴管理」を参照）。
+AGENTS.md
+CLAUDE.md
+doc/
