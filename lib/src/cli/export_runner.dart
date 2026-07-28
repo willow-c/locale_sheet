@@ -193,6 +193,21 @@ class ExportRunner {
         effectiveLogger
           ..infoSheetLocales(effectiveSheetName, sheet.locales)
           ..info('Ignored columns: $ignored');
+
+        // ロケール列が1つも無いとエクスポータは何も書き出さない。
+        // それを成功として報告すると、ヘッダを間違えた利用者が
+        // 「出力が空である」ことに気付けないため、エラーとして扱う。
+        if (sheet.locales.isEmpty) {
+          final hint = sheet.ignoredHeaders.isEmpty
+              ? 'The header row has no columns besides "key".'
+              : 'None of the remaining columns ($ignored) was treated as a '
+                    'locale. Use --locales to name them explicitly.';
+          _emitError(
+            'No locale columns found in sheet "$effectiveSheetName". $hint',
+            effectiveLogger,
+          );
+          return 64;
+        }
       } on SheetNotFoundException catch (e) {
         final available = e.availableSheets.join(', ');
         final msg =

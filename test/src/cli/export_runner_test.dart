@@ -378,6 +378,97 @@ void main() {
     },
   );
 
+  /// ロケール列が1つも無い場合に、成功扱いにせず終了コード64を返すことを検証
+  /// Arrange-Act-Assertパターン
+  test('returns 64 when the sheet has no locale columns', () async {
+    // Arrange: key 以外の列はあるが、どれもロケールとして採用されなかった
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(
+      locales: const [],
+      entries: [LocalizationEntry('hello', const {})],
+      ignoredHeaders: const ['description', '備考'],
+    );
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    final tmp = File('test/tmp_export_runner_no_locales.xlsx');
+    await tmp.writeAsBytes([0]);
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': exporter},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert: エクスポートは行われず、無視した列と回避策が示される
+      expect(res, equals(64));
+      expect(exporter.lastSheet, isNull);
+      final err = logger.errors.join('\n');
+      expect(err, contains('No locale columns found'));
+      expect(err, contains('description'));
+      expect(err, contains('--locales'));
+    } finally {
+      await tmp.delete();
+    }
+  });
+
+  /// key 列しか無いシートでは、無視した列が無い旨のメッセージになることを検証
+  /// Arrange-Act-Assertパターン
+  test(
+    'explains that only a key column exists when nothing was ignored',
+    () async {
+      // Arrange
+      final logger = TestLogger();
+      final sheet = LocalizationSheet(locales: const [], entries: []);
+      final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+
+      final tmp = File('test/tmp_export_runner_key_only.xlsx');
+      await tmp.writeAsBytes([0]);
+
+      try {
+        final args = argParser().parse([
+          '--input',
+          tmp.path,
+          '--format',
+          'arb',
+          '--out',
+          'outdir',
+        ]);
+
+        final runner = ExportRunner(
+          logger: logger,
+          parser: parser,
+          exporters: {'arb': _FakeExporter()},
+        );
+
+        // Act
+        final res = await runner.run(args);
+
+        // Assert
+        expect(res, equals(64));
+        expect(
+          logger.errors.join('\n'),
+          contains('no columns besides "key"'),
+        );
+      } finally {
+        await tmp.delete();
+      }
+    },
+  );
+
   /// ロケールとして扱った列と無視した列が常にログ出力されることを検証
   /// Arrange-Act-Assertパターン
   test('logs both the selected locales and the ignored columns', () async {
