@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# verify.sh - run format -> analyze -> test -> coverage (mac/linux)
+# verify.sh - run format -> fix check -> analyze -> test -> coverage (mac/linux)
+#
+# 生成物の削除は行いません。検証コマンドがファイルを消すのは予期できない
+# ためです。作業ディレクトリを綺麗にしたい場合は `make clean` を明示的に
+# 実行してください。
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
@@ -11,12 +15,8 @@ else
     DART_CMD="dart"
 fi
 
-echo "[locale_sheet] running clean..."
-if [ -f ./scripts/clean.sh ] || [ -x ./scripts/clean.sh ]; then
-    ./scripts/clean.sh
-else
-    echo "[locale_sheet] ./scripts/clean.sh not found, skipping clean"
-fi
+echo "[locale_sheet] fetching packages..."
+eval $DART_CMD pub get
 
 echo "[locale_sheet] running format..."
 ./scripts/format.sh

@@ -38,9 +38,7 @@ jobs:
         with:
           setup: true
       
-      - name: Install dependencies
-        run: fvm dart pub get
-      
+      # 依存の解決は scripts/verify.sh が行う（ローカルと同じ手順にするため）。
       - name: Install coverage tool
         run: fvm dart pub global activate coverage
       
