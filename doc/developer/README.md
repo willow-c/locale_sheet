@@ -21,6 +21,7 @@
 - fvm（Dart/Flutter バージョン管理。バージョンは `.fvmrc` で固定）
 - lcov（カバレッジHTMLレポート生成用。`genhtml` を使う）
 - `coverage` パッケージ（`scripts/coverage.sh` が `pub global run coverage:format_coverage` を使うため必須）
+- **git-lfs**（`example/*.xlsx` は `.gitattributes` で LFS 管理。未インストールのままクローンするとポインタファイルが置かれ、実ファイルを読む e2e テストが `Excel format unsupported` で失敗する）
 
 Homebrew でのインストール例（macOS）:
 
@@ -78,9 +79,19 @@ fvm dart pub global activate coverage
 ## CI / 開発フロー
 
 - `main` / `develop` への push と PR で [.github/workflows/verify.yml](../../.github/workflows/verify.yml) が実行される。
-- ワークフローは FVM で Flutter SDK を用意したうえで `scripts/verify.sh` を実行する。内訳は clean → format → `dart fix --dry-run` チェック → `dart analyze` → `dart test` → カバレッジ収集。
+- ワークフローは FVM で Flutter SDK を用意したうえで `scripts/verify.sh` を実行する。内訳は `pub get` → format → `dart fix --dry-run` チェック → `dart analyze` → `dart test` → カバレッジ収集。
 - カバレッジは Codecov にアップロードされ、`coverage/` は artifact として 30 日保持される。
 - ローカルでも同じ流れを `make verify`（Windows は `make.ps1 verify`）で再現できる。PR を出す前に実行しておくと CI での差し戻しを防げる。
+- **`verify` は生成物を削除しない。** 検証コマンドがファイルを消すのは予期できないため、削除は `make clean` に分離してある（ADR-17 を参照）。
+
+## clean が削除するもの
+
+`make clean`（Windows は `make.ps1 clean`）は、このリポジトリが生成する既知のパスだけを削除する。
+
+- `.dart_tool/` / `build/` / `coverage/`
+- `lib/l10n/` / `example/out/`（サンプル実行時の出力先）
+
+名前による全体検索は行わない。出力先は利用者が `--out` で自由に指定できるため、`*.arb` や `l10n` をリポジトリ全体から掃くと、利用者の作業結果まで消えてしまう。
 
 ## ExportCommand の注入方法（開発者向けサンプル）
 

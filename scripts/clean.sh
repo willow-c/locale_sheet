@@ -1,32 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# locale_sheet: 開発用クリーンアップスクリプト
+# locale_sheet: 生成物を削除するスクリプト
+#
+# 削除するのは、このリポジトリのビルド・テストが生成する既知のパスだけです。
+# 名前による全体検索（`find . -name '*.arb'` など）は行いません。出力先は
+# 利用者が `--out` で自由に指定できるため、リポジトリ全体を掃くと利用者の
+# 作業結果まで消えてしまいます。
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "[locale_sheet] cleaning generated/test files..."
+echo "[locale_sheet] removing generated files..."
 
-echo "[locale_sheet] running Flutter clean (fvm/flutter if available)"
-if command -v fvm >/dev/null 2>&1; then
-	echo "[locale_sheet] running: fvm flutter clean"
-	fvm flutter clean || true
-elif command -v flutter >/dev/null 2>&1; then
-	echo "[locale_sheet] running: flutter clean"
-	flutter clean || true
-else
-	echo "[locale_sheet] flutter が見つかりません (skipping flutter clean)"
-fi
+# pub / テストの生成物
+rm -rf .dart_tool/ build/ coverage/
 
-# カバレッジ・テスト生成物
-rm -rf coverage/
-rm -rf .dart_tool/
-
-# l10n/ ディレクトリや .arb ファイル（lib/l10n, test/l10n など）
-find . -type d -name l10n -exec rm -rf {} +
-find . -type f -name '*.arb' -delete
-
-# .DS_Store など不要ファイル
-find . -type f -name '.DS_Store' -delete
+# このリポジトリで生成されるローカライズ出力（.gitignore と対応）
+rm -rf lib/l10n/ example/out/
 
 echo "[locale_sheet] clean done."

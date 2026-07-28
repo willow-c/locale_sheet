@@ -1,15 +1,30 @@
-# PowerShell: locale_sheet クリーンアップスクリプト
+# PowerShell: locale_sheet 生成物削除スクリプト
+#
+# 削除するのは、このリポジトリのビルド・テストが生成する既知のパスだけです。
+# 名前による全体検索（`Get-ChildItem -Recurse -Filter *.arb` など）は行いません。
+# 出力先は利用者が --out で自由に指定できるため、リポジトリ全体を掃くと
+# 利用者の作業結果まで消えてしまいます。
 $ErrorActionPreference = 'Stop'
-Write-Host "[locale_sheet] cleaning generated/test files..."
 
-# カバレッジ・テスト生成物
-Remove-Item -Recurse -Force coverage, .dart_tool -ErrorAction SilentlyContinue
+$root = Split-Path $PSScriptRoot -Parent
+Set-Location $root
 
-# l10n ディレクトリと .arb ファイル
-Get-ChildItem -Recurse -Directory -Filter l10n | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-Get-ChildItem -Recurse -Filter *.arb | Remove-Item -Force -ErrorAction SilentlyContinue
+Write-Host "[locale_sheet] removing generated files..."
 
-# .DS_Store など
-Get-ChildItem -Recurse -Filter .DS_Store | Remove-Item -Force -ErrorAction SilentlyContinue
+$targets = @(
+    '.dart_tool',
+    'build',
+    'coverage',
+    'lib/l10n',
+    'example/out'
+)
+
+foreach ($target in $targets) {
+    $path = Join-Path $root $target
+    if (Test-Path $path) {
+        Remove-Item -Recurse -Force $path
+        Write-Host "  removed: $target"
+    }
+}
 
 Write-Host "[locale_sheet] clean done."

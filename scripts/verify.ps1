@@ -1,16 +1,23 @@
 <#
   PowerShell: verify.ps1
-  実行内容: format -> analyze -> test -> coverage
+  実行内容: format -> fix check -> analyze -> test -> coverage
+
+  生成物の削除は行いません。検証コマンドがファイルを消すのは予期できない
+  ためです。作業ディレクトリを綺麗にしたい場合は `make.ps1 clean` を
+  明示的に実行してください。
 #>
 
 $ErrorActionPreference = 'Stop'
 
 Write-Host "locale_sheet: verify (PowerShell)"
 
-function Invoke-LocalCommand($cmd, $args) {
-    Write-Host "Running: $cmd $($args -join ' ')"
-    $proc = Start-Process -FilePath $cmd -ArgumentList $args -NoNewWindow -Wait -PassThru
-    if ($proc.ExitCode -ne 0) { throw "Command failed: $cmd $($args -join ' ') (exit $($proc.ExitCode))" }
+# 引数名に $args を使うと PowerShell の自動変数を隠してしまうため避ける。
+function Invoke-LocalCommand($cmd, $commandArgs) {
+    Write-Host "Running: $cmd $($commandArgs -join ' ')"
+    $proc = Start-Process -FilePath $cmd -ArgumentList $commandArgs -NoNewWindow -Wait -PassThru
+    if ($proc.ExitCode -ne 0) {
+        throw "Command failed: $cmd $($commandArgs -join ' ') (exit $($proc.ExitCode))"
+    }
 }
 
 # choose fvm if available
@@ -20,14 +27,6 @@ if (Get-Command fvm -ErrorAction SilentlyContinue) {
 } else {
     $cmd = 'dart'
     $argsPrefix = @()
-}
-
-Write-Host "Running clean..."
-$cleanScript = Join-Path $PSScriptRoot 'clean.ps1'
-if (Test-Path $cleanScript) {
-    & $cleanScript
-} else {
-    Write-Host "clean.ps1 が見つかりません, skipping clean"
 }
 
 Write-Host "Resolving packages..."

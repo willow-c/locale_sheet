@@ -507,3 +507,48 @@ CLI は1回の実行でワークブックを2回デコードしていた。1回�
 `ExportCommand` の `logger` 引数は、公開クラスの引数でありながら公開 API ではないという状態が残る。ドキュメンテーションコメントで意図を明示し、ライブラリ利用時は CLI を経由せずコアを直接呼ぶよう案内した。
 
 参照: [PR #51](https://github.com/willow-c/locale_sheet/pull/51)
+
+---
+
+## ADR-17: 検証は何も削除せず、削除は既知のパスに限定する
+
+**状況**
+
+`make verify` は先頭で `clean` を呼んでいた。その `clean` は次の処理を含んでいた。
+
+```bash
+find . -type d -name l10n -exec rm -rf {} +
+find . -type f -name '*.arb' -delete
+```
+
+リポジトリ配下の `l10n` という名前のディレクトリと、すべての `.arb` ファイルを名前で全体検索して削除する。本パッケージの出力先は利用者が `--out` で自由に指定できるため、`./l10n` に出力していた開発者が「検証」のつもりで `make verify` を実行すると、作業結果を失う。
+
+さらに `clean` は `fvm flutter clean` を実行していた。本パッケージは `pubspec.yaml` に `flutter:` セクションを持たない純粋な Dart パッケージであり、Flutter ツールの起動（CI ログでは `Building flutter tool...` から始まる依存解決）が毎回発生していた。
+
+加えて CI は `fvm dart pub get` を実行した直後に `verify.sh` を呼び、その中の `clean` が `.dart_tool/` を削除していたため、解決結果が数秒で捨てられていた。`verify.sh` と `verify.ps1` で手順も揃っていなかった（`pub get` の有無）。
+
+**判断**
+
+- `verify` から `clean` の呼び出しを外す。検証は何も削除しない。
+- `clean` の削除対象を既知のパス（`.dart_tool/` `build/` `coverage/` `lib/l10n/` `example/out/`）に限定し、名前による全体検索をやめる。
+- `clean` から `flutter clean` を削除する。
+- `verify.sh` / `verify.ps1` の手順を揃え、どちらも `pub get` から始める。CI 側の重複した `pub get` ステップは削除する。
+
+**理由**
+
+「verify」という名前から削除は予期できない。破壊的な操作は、利用者が明示的に選んだときにだけ起きるべき。
+
+削除対象を名前で全体検索するのは、消してよいものを「名前が一致するかどうか」で判断していることになる。生成物の場所はこのリポジトリが決めているので、パスを直接指定すれば足りる。
+
+`flutter clean` が消すのは `build/` と `.dart_tool/` であり、`rm -rf` で置き換えられる。Flutter に依存しないパッケージのために Flutter ツールを起動する理由が無い。
+
+**採用しなかった案**
+
+- **`verify` から `clean` を残したまま、削除対象だけ限定する** — 範囲は狭まるが「検証したら消える」性質は残る。生成物であっても、検証のたびに消える必要は無い。
+- **CI 側だけ `clean` を呼ぶ** — CI は毎回まっさらなチェックアウトなので、そもそも不要。
+
+**影響**
+
+`make verify` の実行時間が短くなり（Flutter ツールの起動が無くなる）、実行しても作業ディレクトリのファイルが消えなくなる。まっさらな状態から検証したい場合は `make clean && make verify` と明示的に書く。
+
+参照: [PR #52](https://github.com/willow-c/locale_sheet/pull/52)
