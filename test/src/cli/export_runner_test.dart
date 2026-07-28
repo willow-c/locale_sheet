@@ -294,6 +294,91 @@ void main() {
     }
   });
 
+  /// 説明列に key を指定した場合、入力を読む前にEX_USAGE(64)で終わることを検証
+  /// Arrange-Act-Assertパターン
+  test('returns EX_USAGE when the description header is "key"', () async {
+    // Arrange: 1列目は必ずキー列なので、入力の内容に関わらず誤り
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(locales: const ['en'], entries: []);
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+    final exporter = _FakeExporter();
+
+    // 入力ファイルは用意しない。読み込み前に弾かれることの確認を兼ねる。
+    final args = ExportCommand().argParser.parse([
+      '--input',
+      'test/no_such_file_should_not_be_read.xlsx',
+      '--format',
+      'arb',
+      '--out',
+      'outdir',
+      '--description-header',
+      'Key',
+    ]);
+
+    final runner = ExportRunner(
+      logger: logger,
+      parser: parser,
+      exporters: {'arb': exporter},
+    );
+
+    // Act
+    final res = await runner.run(args);
+
+    // Assert: 入力を読んでいれば EX_NOINPUT になるはずなので、
+    // EX_USAGE であることが「読む前に弾いた」ことの証明になる
+    expect(res, equals(exitUsage));
+    expect(
+      logger.errors.join('\n'),
+      contains("--description-header cannot be 'key'"),
+    );
+    expect(exporter.lastSheet, isNull);
+  });
+
+  /// 出力先を作成できない場合にEX_CANTCREAT(73)を返すことを検証
+  /// Arrange-Act-Assertパターン
+  test('returns EX_CANTCREAT when the output cannot be written', () async {
+    // Arrange: 既存のファイルを出力先に指定するとディレクトリを作れない
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(
+      locales: const ['en'],
+      entries: [
+        LocalizationEntry('hello', const {'en': 'Hello'}),
+      ],
+    );
+    final parser = _FakeParser(sheet, sheets: ['Sheet1']);
+
+    final tmp = Directory.systemTemp.createTempSync('export_runner_cantcreat');
+    final input = File('${tmp.path}/in.xlsx')..writeAsBytesSync([0]);
+    final blocker = File('${tmp.path}/out')..writeAsStringSync('not a dir');
+
+    try {
+      final args = argParser().parse([
+        '--input',
+        input.path,
+        '--format',
+        'arb',
+        '--out',
+        blocker.path,
+      ]);
+
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        // 実物のエクスポーターを使う（書き込みの失敗を再現するため）
+        exporters: {'arb': ArbExporter()},
+      );
+
+      // Act
+      final res = await runner.run(args);
+
+      // Assert
+      expect(res, equals(exitCantCreate));
+      expect(logger.errors.join('\n'), contains('Cannot write output to'));
+    } finally {
+      tmp.deleteSync(recursive: true);
+    }
+  });
+
   /// 一部のオプションが定義されていないArgParserから得たArgResultsでも
   /// 例外にならず、未指定として扱われることを検証
   /// Arrange-Act-Assertパターン
