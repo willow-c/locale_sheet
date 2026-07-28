@@ -1,4 +1,4 @@
-import 'package:locale_sheet/src/core/model_helpers.dart';
+import 'package:locale_sheet/src/core/map_utils.dart';
 import 'package:locale_sheet/src/core/placeholder.dart';
 import 'package:meta/meta.dart';
 

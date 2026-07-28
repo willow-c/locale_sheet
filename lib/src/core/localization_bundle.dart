@@ -1,4 +1,4 @@
-import 'package:locale_sheet/src/core/model_helpers.dart';
+import 'package:locale_sheet/src/core/map_utils.dart';
 import 'package:meta/meta.dart';
 
 /// ロケール単位の翻訳コレクション。

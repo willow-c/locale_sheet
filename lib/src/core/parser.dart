@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
+import 'package:locale_sheet/src/core/locale_tag.dart';
 import 'package:locale_sheet/src/core/model.dart';
-import 'package:locale_sheet/src/core/model_helpers.dart';
 import 'package:meta/meta.dart';
 
 /// XLSX のバイトを解析して [LocalizationSheet] に変換します。
@@ -341,7 +341,7 @@ class ExcelParser {
 
   static String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
-  // Uses `isValidLocaleTag` from model_helpers.dart
+  // Uses `isValidLocaleTag` from locale_tag.dart
 
   /// Return the list of sheet names present in the workbook represented
   /// by the provided XLSX bytes.

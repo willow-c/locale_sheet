@@ -29,7 +29,7 @@
 
 - ヘッダ行の各セルがロケール文字列かどうか判断し、ロケール列のみを出力対象とします。`key` 列およびロケール列に該当しない列（例: `description`, `備考`）は出力されません。
 - `-` と `_` は等価に扱います（`zh-Hant-HK` と `zh_Hant_HK` は同一視）。
-- 大文字小文字は比較時に区別しません（実装上はトリムを行い、解析時に区切りを統一して検証します）。詳細は `lib/src/core/model_helpers.dart` の `normalizeLocaleTag` / `isValidLocaleTag` を参照してください。
+- 大文字小文字は比較時に区別しません（実装上はトリムを行い、解析時に区切りを統一して検証します）。詳細は `lib/src/core/locale_tag.dart` の `normalizeLocaleTag` / `isValidLocaleTag` を参照してください。
 
 ## ARB 出力時の振る舞い
 

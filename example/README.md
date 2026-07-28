@@ -29,7 +29,7 @@ The `likeFoodFluit` row contains `{food}` / `{fluit}` placeholders and is the ro
 
 - Only header cells that look like locale tags are treated as locale columns; non-locale columns (for example `description` or `notes`) are ignored for resource output.
 - Incoming tags may use either `-` or `_` as separators; these are treated equivalently (e.g. `zh-Hant-HK` and `zh_Hant_HK` are considered the same).
-- Comparisons are case-insensitive. The implementation trims whitespace and normalizes separators for validation; see `lib/src/core/model_helpers.dart` (`normalizeLocaleTag` / `isValidLocaleTag`) for details.
+- Comparisons are case-insensitive. The implementation trims whitespace and normalizes separators for validation; see `lib/src/core/locale_tag.dart` (`normalizeLocaleTag` / `isValidLocaleTag`) for details.
 
 ## ARB output behavior
 
