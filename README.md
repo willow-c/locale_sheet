@@ -119,6 +119,7 @@
   - `convertExcelBytesToArb(Uint8List bytes, LocalizationExporter exporter, String outDir, {ExcelParser? parser, String defaultLocale = 'en', String? sheetName, String? descriptionHeader, List<String>? locales})`
   - `ExportCommand` — can be registered with a `CommandRunner` to run the CLI programmatically.
   - `LocalizationSheet.duplicateKeys` — returns the keys that appear in more than one row, so library users can apply their own handling.
+  - `ExcelParser.parseWorkbook` — parses the sheet and also reports which sheet was read and which sheets the workbook contains, decoding the file only once. Use it instead of calling `parse` and `getSheetNames` separately.
   - `PlaceholderResolver` — detects `{name}` placeholders that are not declared on an entry and, when asked, adds them. It returns a new `LocalizationSheet` and the list of findings; the input sheet is never modified. Reporting (warn / ignore / abort) is left to the caller.
 
 Both helper functions accept an optional `sheetName` parameter. When provided that sheet name is parsed; when `null` (or omitted) the first sheet in the workbook is used. If the specified sheet is not present a `SheetNotFoundException` is thrown (the CLI prints available sheets and exits with code `64`).

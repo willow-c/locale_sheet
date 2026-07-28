@@ -11,13 +11,14 @@ import '../../test_helpers/logger.dart';
 class MockExporter extends Mock implements LocalizationExporter {}
 
 class FakeParser extends ExcelParser {
-  FakeParser(this.sheet);
+  FakeParser(this.sheet, {this.sheets = const <String>['Sheet1']});
   final LocalizationSheet sheet;
+  final List<String> sheets;
   String? lastSheetName;
   String? lastDescriptionHeader;
 
   @override
-  LocalizationSheet parse(
+  ParsedWorkbook parseWorkbook(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
@@ -25,11 +26,12 @@ class FakeParser extends ExcelParser {
   }) {
     lastSheetName = sheetName;
     lastDescriptionHeader = descriptionHeader;
-    return sheet;
+    return ParsedWorkbook(
+      sheet: sheet,
+      sheetName: sheetName ?? (sheets.isNotEmpty ? sheets.first : 'Sheet1'),
+      availableSheets: sheets,
+    );
   }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => <String>[];
 }
 
 void main() {
@@ -453,7 +455,7 @@ class _ThrowingParser extends ExcelParser {
   final List<String> available;
 
   @override
-  LocalizationSheet parse(
+  ParsedWorkbook parseWorkbook(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
@@ -461,14 +463,11 @@ class _ThrowingParser extends ExcelParser {
   }) {
     throw SheetNotFoundException(requested, available);
   }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => available;
 }
 
 class _FormatThrowingParser extends ExcelParser {
   @override
-  LocalizationSheet parse(
+  ParsedWorkbook parseWorkbook(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
@@ -476,9 +475,6 @@ class _FormatThrowingParser extends ExcelParser {
   }) {
     throw const FormatException('Description header not found');
   }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => <String>[];
 }
 
 class _LoggingFakeParser extends ExcelParser {
@@ -486,17 +482,16 @@ class _LoggingFakeParser extends ExcelParser {
   final LocalizationSheet sheet;
 
   @override
-  LocalizationSheet parse(
+  ParsedWorkbook parseWorkbook(
     Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
     List<String>? locales,
-  }) {
-    return sheet;
-  }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => <String>['Sheet1', 'Sheet2'];
+  }) => ParsedWorkbook(
+    sheet: sheet,
+    sheetName: sheetName ?? 'Sheet1',
+    availableSheets: const ['Sheet1', 'Sheet2'],
+  );
 }
 
 class _LoggingFakeExporter implements LocalizationExporter {

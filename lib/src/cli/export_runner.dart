@@ -53,18 +53,7 @@ class ExportRunner {
 
     try {
       final bytes = await File(inputPath).readAsBytes();
-      final sheetListResult = _listAvailableSheets(
-        bytes,
-        parser,
-        effectiveLogger,
-      );
-
-      final prepared = _prepareSheet(
-        argResults,
-        bytes,
-        sheetListResult,
-        effectiveLogger,
-      );
+      final prepared = _prepareSheet(argResults, bytes, effectiveLogger);
       if (prepared.exitCode != null) return prepared.exitCode!;
       final sheet = prepared.sheet!;
 
@@ -128,10 +117,8 @@ class ExportRunner {
   ({LocalizationSheet? sheet, int? exitCode}) _prepareSheet(
     ArgResults argResults,
     Uint8List bytes,
-    ({List<String> sheets, bool failed}) sheetListResult,
     Logger effectiveLogger,
   ) {
-    final sheetName = _optionOrNull<String>(argResults, 'sheet-name');
     final descriptionHeader = _wasParsed(argResults, 'description-header')
         ? _optionOrNull<String>(argResults, 'description-header')
         : null;
@@ -139,11 +126,11 @@ class ExportRunner {
         ? _optionOrNull<List<String>>(argResults, 'locales')
         : null;
 
-    LocalizationSheet sheet;
+    ParsedWorkbook parsed;
     try {
-      sheet = parser.parse(
+      parsed = parser.parseWorkbook(
         bytes,
-        sheetName: sheetName,
+        sheetName: _optionOrNull<String>(argResults, 'sheet-name'),
         descriptionHeader: descriptionHeader,
         locales: requestedLocales,
       );
@@ -156,6 +143,10 @@ class ExportRunner {
       );
       return (sheet: null, exitCode: 64);
     }
+
+    effectiveLogger.infoAvailableSheets(parsed.availableSheets);
+    final effectiveSheetName = parsed.sheetName;
+    var sheet = parsed.sheet;
 
     // Duplicate keys parse successfully but are silently overwritten on
     // export (per locale, last non-empty cell wins), which can mix values
@@ -183,8 +174,6 @@ class ExportRunner {
       if (outcome.abort) return (sheet: null, exitCode: 1);
     }
 
-    final effectiveSheetName =
-        sheetName ?? _determineEffectiveSheetName(sheetListResult);
     // どの列がロケールとして扱われ、どの列が外されたかを常に示す。
     // ロケール判定は緩く、`memo` のような一般的な列名も通るため、
     // 採用結果を確認できないと誤った ARB が生成されても気付けない。
@@ -305,45 +294,6 @@ class ExportRunner {
   /// 明示的に指定されたオプションの値。未指定・未定義なら `null`。
   T? _reportedValue<T>(ArgResults argResults, String name) =>
       _wasParsed(argResults, name) ? _optionOrNull<T>(argResults, name) : null;
-
-  /// Result of attempting to list available sheets.
-  ///
-  /// Contains the list of sheet names and a flag indicating whether
-  /// the operation succeeded or failed.
-  ({List<String> sheets, bool failed}) _listAvailableSheets(
-    Uint8List bytes,
-    ExcelParser parser,
-    Logger effectiveLogger,
-  ) {
-    try {
-      final sheets = parser.getSheetNames(bytes);
-      effectiveLogger.infoAvailableSheets(sheets);
-      return (sheets: sheets, failed: false);
-    } on Object catch (_) {
-      return (sheets: <String>[], failed: true);
-    }
-  }
-
-  /// Determine the effective sheet name for logging purposes.
-  ///
-  /// Returns a descriptive string based on the result of listing sheets:
-  /// - If sheets were listed successfully and at least one exists,
-  ///   returns the first sheet name.
-  /// - If sheets were listed successfully but none exist,
-  ///   returns '(workbook has no sheets)'.
-  /// - If listing sheets failed,
-  ///   returns '(failed to list sheets)'.
-  String _determineEffectiveSheetName(
-    ({List<String> sheets, bool failed}) sheetListResult,
-  ) {
-    if (sheetListResult.failed) {
-      return '(failed to list sheets)';
-    }
-    if (sheetListResult.sheets.isEmpty) {
-      return '(workbook has no sheets)';
-    }
-    return sheetListResult.sheets.first;
-  }
 
   String? _determineDefaultLocale(
     ArgResults argResults,

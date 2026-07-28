@@ -258,6 +258,43 @@ void main() {
     expect(sheet.ignoredHeaders, ['description', '備考']);
   });
 
+  /// parseWorkbookが解析したシート名と全シート名を返すことを検証
+  /// Arrange-Act-Assertパターン
+  test('parseWorkbook reports the parsed sheet and the available sheets', () {
+    // Arrange: シート名を省略した場合、最初のシートが採用される
+    final excel = Excel.createExcel();
+    excel['Sheet1']
+      ..appendRow([TextCellValue('key'), TextCellValue('en')])
+      ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
+    excel['Extra'].appendRow([TextCellValue('key')]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final parsed = parser.parseWorkbook(Uint8List(0));
+
+    // Assert: 呼び出し側が「どれが最初のシートか」を推測し直す必要がない
+    expect(parsed.sheetName, 'Sheet1');
+    expect(parsed.availableSheets, containsAll(['Sheet1', 'Extra']));
+    expect(parsed.sheet.locales, ['en']);
+  });
+
+  /// シート名を指定した場合、その名前がそのまま報告されることを検証
+  /// Arrange-Act-Assertパターン
+  test('parseWorkbook reports the requested sheet name', () {
+    // Arrange
+    final excel = Excel.createExcel();
+    excel['Target']
+      ..appendRow([TextCellValue('key'), TextCellValue('en')])
+      ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
+    final parser = ExcelParser(decoder: (_) => excel);
+
+    // Act
+    final parsed = parser.parseWorkbook(Uint8List(0), sheetName: 'Target');
+
+    // Assert
+    expect(parsed.sheetName, 'Target');
+  });
+
   /// 文字列以外のセル型が、型ごとに定めた表記で文字列化されることを検証
   /// Arrange-Act-Assertパターン
   test('parse converts each cell value type explicitly', () {

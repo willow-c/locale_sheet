@@ -32,17 +32,16 @@ class _FakeParser extends ExcelParser {
   final List<String> sheets;
 
   @override
-  LocalizationSheet parse(
-    List<int> bytes, {
+  ParsedWorkbook parseWorkbook(
+    Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
     List<String>? locales,
-  }) {
-    return sheet;
-  }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => sheets;
+  }) => ParsedWorkbook(
+    sheet: sheet,
+    sheetName: sheetName ?? (sheets.isNotEmpty ? sheets.first : 'Sheet1'),
+    availableSheets: sheets,
+  );
 }
 
 class _ThrowingParser extends ExcelParser {
@@ -51,72 +50,26 @@ class _ThrowingParser extends ExcelParser {
   final List<String> available;
 
   @override
-  LocalizationSheet parse(
-    List<int> bytes, {
+  ParsedWorkbook parseWorkbook(
+    Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
     List<String>? locales,
   }) {
     throw SheetNotFoundException(requested, available);
   }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => available;
 }
 
 class _FormatThrowingParser extends ExcelParser {
   @override
-  LocalizationSheet parse(
-    List<int> bytes, {
+  ParsedWorkbook parseWorkbook(
+    Uint8List bytes, {
     String? sheetName,
     String? descriptionHeader,
     List<String>? locales,
   }) {
     throw const FormatException('bad format');
   }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => <String>[];
-}
-
-/// Parser that throws when getting sheet names to simulate failure
-class _SheetListFailureParser extends ExcelParser {
-  _SheetListFailureParser(this.sheet);
-  final LocalizationSheet sheet;
-
-  @override
-  LocalizationSheet parse(
-    List<int> bytes, {
-    String? sheetName,
-    String? descriptionHeader,
-    List<String>? locales,
-  }) {
-    return sheet;
-  }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) {
-    throw Exception('Failed to read workbook structure');
-  }
-}
-
-/// Parser with empty sheet list but successful parsing
-class _EmptySheetListParser extends ExcelParser {
-  _EmptySheetListParser(this.sheet);
-  final LocalizationSheet sheet;
-
-  @override
-  LocalizationSheet parse(
-    List<int> bytes, {
-    String? sheetName,
-    String? descriptionHeader,
-    List<String>? locales,
-  }) {
-    return sheet;
-  }
-
-  @override
-  List<String> getSheetNames(Uint8List bytes) => <String>[];
 }
 
 void main() {
@@ -299,84 +252,46 @@ void main() {
     }
   });
 
-  test(
-    'logs "(failed to list sheets)" when getSheetNames throws '
-    'but parsing succeeds',
-    () async {
-      final logger = TestLogger();
-      final sheet = LocalizationSheet(locales: const ['en', 'ja'], entries: []);
-      final parser = _SheetListFailureParser(sheet);
-      final exporter = _FakeExporter();
+  /// シート名を省略した場合、解析器が報告したシート名がログに使われることを検証
+  /// （CLI 側で「最初のシート」を推測し直さない）
+  /// Arrange-Act-Assertパターン
+  test('logs the sheet name reported by the parser', () async {
+    // Arrange: シート名は指定せず、解析器は Sheet2 を解析したと報告する
+    final logger = TestLogger();
+    final sheet = LocalizationSheet(locales: const ['en', 'ja'], entries: []);
+    final parser = _FakeParser(sheet, sheets: ['Sheet2', 'Sheet1']);
 
-      final tmp = File('test/tmp_export_runner6.xlsx');
-      await tmp.writeAsBytes([0]);
+    final tmp = File('test/tmp_export_runner_sheetname.xlsx');
+    await tmp.writeAsBytes([0]);
 
-      try {
-        final args = argParser().parse([
-          '--input',
-          tmp.path,
-          '--format',
-          'arb',
-          '--out',
-          'outdir',
-        ]);
+    try {
+      final args = argParser().parse([
+        '--input',
+        tmp.path,
+        '--format',
+        'arb',
+        '--out',
+        'outdir',
+      ]);
 
-        final runner = ExportRunner(
-          logger: logger,
-          parser: parser,
-          exporters: {'arb': exporter},
-        );
+      final runner = ExportRunner(
+        logger: logger,
+        parser: parser,
+        exporters: {'arb': _FakeExporter()},
+      );
 
-        final res = await runner.run(args);
-        expect(res, equals(0));
-        // Logger should have logged with
-        // "(failed to list sheets)" as the sheet name
-        final infoMessages = logger.infos.join(' ');
-        expect(infoMessages, contains('(failed to list sheets)'));
-      } finally {
-        await tmp.delete();
-      }
-    },
-  );
+      // Act
+      final res = await runner.run(args);
 
-  test(
-    'logs "(workbook has no sheets)" when getSheetNames returns empty list',
-    () async {
-      final logger = TestLogger();
-      final sheet = LocalizationSheet(locales: const ['en', 'ja'], entries: []);
-      final parser = _EmptySheetListParser(sheet);
-      final exporter = _FakeExporter();
-
-      final tmp = File('test/tmp_export_runner7.xlsx');
-      await tmp.writeAsBytes([0]);
-
-      try {
-        final args = argParser().parse([
-          '--input',
-          tmp.path,
-          '--format',
-          'arb',
-          '--out',
-          'outdir',
-        ]);
-
-        final runner = ExportRunner(
-          logger: logger,
-          parser: parser,
-          exporters: {'arb': exporter},
-        );
-
-        final res = await runner.run(args);
-        expect(res, equals(0));
-        // Logger should have logged with
-        // "(workbook has no sheets)" as the sheet name
-        final infoMessages = logger.infos.join(' ');
-        expect(infoMessages, contains('(workbook has no sheets)'));
-      } finally {
-        await tmp.delete();
-      }
-    },
-  );
+      // Assert: シート一覧と選択されたシートの両方が報告される
+      expect(res, equals(0));
+      final infoMessages = logger.infos.join(' ');
+      expect(infoMessages, contains('Available sheets: Sheet2, Sheet1'));
+      expect(infoMessages, contains('Sheet: Sheet2'));
+    } finally {
+      await tmp.delete();
+    }
+  });
 
   /// 一部のオプションが定義されていないArgParserから得たArgResultsでも
   /// 例外にならず、未指定として扱われることを検証
