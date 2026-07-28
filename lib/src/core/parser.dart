@@ -252,12 +252,39 @@ class ExcelParser {
     );
   }
 
+  /// セルの値を文字列に変換します。
+  ///
+  /// `CellValue` の `toString()` に頼らず、型ごとに明示的に変換します。
+  /// `toString()` は表示・デバッグ用であって安定した契約ではないため、
+  /// `excel` パッケージの更新で出力が変わっても気付けません。
+  ///
+  /// `CellValue` は sealed class なので、この switch は網羅性が検査されます。
+  /// 将来のバージョンでセル型が追加された場合、暗黙に別の文字列が出るのでは
+  /// なくコンパイルエラーになります。
   String _cellToString(Data? cell) {
-    if (cell == null) return '';
-    final value = cell.value;
+    final value = cell?.value;
     if (value == null) return '';
-    return value.toString();
+    return switch (value) {
+      // TextSpan.toString() は装飾付きテキストを平坦化して連結する処理であり、
+      // デバッグ表現ではない。子スパンを含めた本文を得る手段が他に無い。
+      TextCellValue(:final value) => value.toString(),
+      IntCellValue(:final value) => value.toString(),
+      DoubleCellValue(:final value) => value.toString(),
+      BoolCellValue(:final value) => value.toString(),
+      FormulaCellValue(:final formula) => formula,
+      // 日付・時刻の表記は従来の出力を維持している。ローカライズ文字列に
+      // 日付セルを置くこと自体が想定外の使い方であり、ここで表記を変えると
+      // 既存利用者の出力が変わるため。
+      DateCellValue() => value.asDateTimeUtc().toIso8601String(),
+      DateTimeCellValue() => value.asDateTimeUtc().toIso8601String(),
+      TimeCellValue() =>
+        '${_twoDigits(value.hour)}:'
+            '${_twoDigits(value.minute)}:'
+            '${_twoDigits(value.second)}',
+    };
   }
+
+  static String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
   // Uses `isValidLocaleTag` from model_helpers.dart
 
