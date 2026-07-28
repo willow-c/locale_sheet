@@ -5,6 +5,14 @@ abstract class Logger {
   /// Emit an informational message.
   void info(String message);
 
+  /// Emit a warning message.
+  ///
+  /// Warnings describe a problem the user should look at — a duplicate key, an
+  /// option that will have no effect — but that does not stop the export.
+  /// Severity belongs to the level, not to the message text, so callers must
+  /// not prefix the message with `WARNING:` themselves.
+  void warn(String message);
+
   /// Emit an error message.
   void error(String message);
 
@@ -56,6 +64,14 @@ class SimpleLogger implements Logger {
   /// Writes an informational message to stdout.
   @override
   void info(String message) => stdout.writeln(message);
+
+  /// Writes a warning to stderr.
+  ///
+  /// Warnings go to stderr rather than stdout so that they remain visible when
+  /// stdout is redirected, and so they can be filtered separately from the
+  /// normal progress output.
+  @override
+  void warn(String message) => stderr.writeln(_c(_yellow, 'WARNING: $message'));
 
   /// Writes an error message to stderr.
   @override

@@ -594,8 +594,8 @@ void main() {
       // Assert: 警告は出るがエクスポートは成功する
       expect(res, equals(0));
       expect(
-        logger.infos.any(
-          (s) => s.contains('WARNING: duplicate key "hello"'),
+        logger.warnings.any(
+          (s) => s.contains('duplicate key "hello"'),
         ),
         isTrue,
       );
@@ -645,7 +645,7 @@ void main() {
       // Assert
       expect(res, equals(0));
       expect(
-        logger.infos.any((s) => s.contains('duplicate key')),
+        logger.warnings.any((s) => s.contains('duplicate key')),
         isFalse,
       );
     } finally {
@@ -691,7 +691,7 @@ void main() {
       expect(exporter.lastSheet, isNotNull);
       final outEntry = exporter.lastSheet!.entries.first;
       expect(outEntry.placeholders.isEmpty, isTrue);
-      expect(logger.infos.any((s) => s.contains('WARNING:')), isTrue);
+      expect(logger.warnings.any((s) => s.contains('not declared')), isTrue);
     } finally {
       await tmp.delete();
     }
@@ -827,7 +827,7 @@ void main() {
         // Assert: 警告は出るが処理は成功し、検出も行われない
         expect(res, equals(0));
         expect(
-          logger.infos.any(
+          logger.warnings.any(
             (s) => s.contains(
               '--treat-undefined-placeholders was provided but',
             ),
@@ -1012,7 +1012,7 @@ void main() {
       expect(res, equals(0));
       final outEntry = exporter.lastSheet!.entries.first;
       expect(outEntry.placeholders.isEmpty, isTrue);
-      expect(logger.infos.any((s) => s.contains('WARNING:')), isFalse);
+      expect(logger.warnings, isEmpty);
     } finally {
       await tmp.delete();
     }
