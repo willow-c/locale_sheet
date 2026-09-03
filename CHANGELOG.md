@@ -1,5 +1,10 @@
 # CHANGE LOG
 
+## vx.x.x 20xx-xx-xx
+
+- change: `ExcelParser` now uses a focused built-in XLSX reader instead of the `excel` package at runtime. The optional `decoder` constructor argument has been removed; code that injected an `Excel` decoder must pass XLSX bytes through the normal parser path or provide an `ExcelParser` implementation at the caller boundary.
+- fix: XLSX files containing duplicate entries in `sharedStrings.xml` no longer fail with `Null check operator used on a null value` or shift subsequent cell values. Shared-string positions and duplicates are now preserved exactly while reading.
+
 ## 0.5.0 - 2026-07-29
 
 This release contains breaking changes. The `change:` entries below list them first.

@@ -18,7 +18,7 @@ void main() {
     final file = File('${tmp.path}/nullcell.xlsx')..writeAsBytesSync(bytes!);
 
     try {
-      final parser = ExcelParser();
+      const parser = ExcelParser();
       final sheetModel = parser.parse(file.readAsBytesSync());
       expect(sheetModel.locales, contains('en'));
       expect(sheetModel.entries.length, 1);

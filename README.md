@@ -81,8 +81,11 @@
 ## Features
 
 - Parses Excel (.xlsx) into an internal model
+- Preserves shared-string order and duplicates, so workbooks containing duplicate shared-string entries can be converted safely
 - Exports to ARB format (keys are sorted alphabetically)
 - Available as both a CLI and a library
+
+XLSX reading is intentionally limited to cell values needed by localization sheets. Formulas are returned as formula text rather than calculated; macros, images, charts, and merged-cell expansion are not processed.
 
 ## Usage
 

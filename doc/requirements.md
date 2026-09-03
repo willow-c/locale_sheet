@@ -57,8 +57,9 @@
 | FR-04 | 指定したシートが存在しない場合は `SheetNotFoundException` を投げ、例外は利用可能なシート名の一覧を保持する |
 | FR-05 | ワークブックにシートが1つも無い状態でシート名を省略した場合も FR-04 と同じ扱いとする |
 | FR-06 | 行が1行も無いシートは、ロケールもエントリも空の結果として正常に返す（エラーにしない） |
+| FR-07 | `sharedStrings.xml` の各エントリは順序と重複を維持して読み取る。セルの共有文字列インデックスを独自に詰め替えない |
 
-実装: `lib/src/core/parser.dart` / テスト: `test/src/core/parser_test.dart`
+実装: `lib/src/core/parser.dart`, `lib/src/core/xlsx_reader.dart` / テスト: `test/src/core/parser_test.dart`, `test/src/core/xlsx_reader_test.dart`
 
 ### 3.2 ヘッダ行の解釈
 
@@ -189,7 +190,7 @@ FR-13 は列の対応付けを列インデックスで保持することで満�
 | --- | --- |
 | NFR-01 | Dart SDK `>=3.9.0 <4.0.0` で動作すること |
 | NFR-02 | Windows / macOS / Linux で動作すること。開発用スクリプトは `.sh` と `.ps1` の両方を用意する |
-| NFR-03 | 実行時依存は最小限に保つ。実際に使用しているのは `args`（CLI 引数）、`excel`（XLSX 解析）、`meta`（不変性アノテーション）の3つ |
+| NFR-03 | 実行時依存は最小限に保つ。実際に使用しているのは `args`（CLI 引数）、`archive`（ZIP 解析）、`xml`（XLSX XML 解析）、`meta`（不変性アノテーション）の4つ。`excel` はテストデータ生成だけに使用する |
 | NFR-04 | 静的解析は `very_good_analysis` を適用し、警告ゼロを維持する |
 | NFR-05 | ソースファイルとテストファイルを1:1で配置する |
 | NFR-06 | テストは AAA パターンで記述し、各テストに日本語で意図を記述する |

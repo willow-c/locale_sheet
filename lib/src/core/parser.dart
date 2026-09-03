@@ -1,7 +1,7 @@
 import 'dart:typed_data';
-import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/locale_tag.dart';
 import 'package:locale_sheet/src/core/model.dart';
+import 'package:locale_sheet/src/core/xlsx_reader.dart';
 import 'package:meta/meta.dart';
 
 /// XLSX のバイトを解析して [LocalizationSheet] に変換します。
@@ -62,13 +62,9 @@ class ParsedWorkbook {
 /// `LocalizationSheet` model.
 class ExcelParser {
   /// Create a new [ExcelParser].
-  ///
-  /// An optional [decoder] can be provided for testing to override the
-  /// default `Excel.decodeBytes` behavior.
-  ExcelParser({Excel Function(Uint8List)? decoder})
-    : _decoder = decoder ?? Excel.decodeBytes;
+  const ExcelParser();
 
-  final Excel Function(Uint8List) _decoder;
+  static const _reader = XlsxReader();
 
   /// Normalize a header for comparison against a requested locale.
   ///
@@ -119,28 +115,18 @@ class ExcelParser {
     String? descriptionHeader,
     List<String>? locales,
   }) {
-    final excel = _decoder(bytes);
-    final selectedSheetName =
-        sheetName ??
-        (excel.tables.keys.isNotEmpty
-            ? excel.tables.keys.first
-            : (throw SheetNotFoundException(
-                '(first sheet)',
-                excel.tables.keys.toList(),
-              )));
-
-    if (!excel.tables.containsKey(selectedSheetName)) {
+    final XlsxSheetData workbook;
+    try {
+      workbook = _reader.read(bytes, sheetName: sheetName);
+    } on XlsxSheetNotFoundException catch (error) {
       throw SheetNotFoundException(
-        selectedSheetName,
-        excel.tables.keys.toList(),
+        error.requestedSheet,
+        error.availableSheets,
       );
     }
-
-    final table = excel.tables[selectedSheetName]!;
-
-    final availableSheets = excel.tables.keys.toList();
-
-    final rows = table.rows;
+    final selectedSheetName = workbook.sheetName;
+    final availableSheets = workbook.availableSheets;
+    final rows = workbook.rows;
     final maxRows = rows.length;
     if (maxRows == 0) {
       return ParsedWorkbook(
@@ -307,46 +293,13 @@ class ExcelParser {
     );
   }
 
-  /// セルの値を文字列に変換します。
-  ///
-  /// `CellValue` の `toString()` に頼らず、型ごとに明示的に変換します。
-  /// `toString()` は表示・デバッグ用であって安定した契約ではないため、
-  /// `excel` パッケージの更新で出力が変わっても気付けません。
-  ///
-  /// `CellValue` は sealed class なので、この switch は網羅性が検査されます。
-  /// 将来のバージョンでセル型が追加された場合、暗黙に別の文字列が出るのでは
-  /// なくコンパイルエラーになります。
-  String _cellToString(Data? cell) {
-    final value = cell?.value;
-    if (value == null) return '';
-    return switch (value) {
-      // TextSpan.toString() は装飾付きテキストを平坦化して連結する処理であり、
-      // デバッグ表現ではない。子スパンを含めた本文を得る手段が他に無い。
-      TextCellValue(:final value) => value.toString(),
-      IntCellValue(:final value) => value.toString(),
-      DoubleCellValue(:final value) => value.toString(),
-      BoolCellValue(:final value) => value.toString(),
-      FormulaCellValue(:final formula) => formula,
-      // 日付・時刻の表記は従来の出力を維持している。ローカライズ文字列に
-      // 日付セルを置くこと自体が想定外の使い方であり、ここで表記を変えると
-      // 既存利用者の出力が変わるため。
-      DateCellValue() => value.asDateTimeUtc().toIso8601String(),
-      DateTimeCellValue() => value.asDateTimeUtc().toIso8601String(),
-      TimeCellValue() =>
-        '${_twoDigits(value.hour)}:'
-            '${_twoDigits(value.minute)}:'
-            '${_twoDigits(value.second)}',
-    };
-  }
-
-  static String _twoDigits(int n) => n.toString().padLeft(2, '0');
+  String _cellToString(String? cell) => cell ?? '';
 
   // Uses `isValidLocaleTag` from locale_tag.dart
 
   /// Return the list of sheet names present in the workbook represented
   /// by the provided XLSX bytes.
   List<String> getSheetNames(Uint8List bytes) {
-    final excel = _decoder(bytes);
-    return excel.tables.keys.toList();
+    return _reader.read(bytes).availableSheets;
   }
 }
