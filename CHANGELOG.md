@@ -4,6 +4,10 @@
 
 - change: `ExcelParser` now uses a focused built-in XLSX reader instead of the `excel` package at runtime. The optional `decoder` constructor argument has been removed; code that injected an `Excel` decoder must pass XLSX bytes through the normal parser path or provide an `ExcelParser` implementation at the caller boundary.
 - fix: XLSX files containing duplicate entries in `sharedStrings.xml` no longer fail with `Null check operator used on a null value` or shift subsequent cell values. Shared-string positions and duplicates are now preserved exactly while reading.
+- fix: numbers whose format contains a colour, currency, or condition section (for example `[Red]#,##0.00`) are no longer misread as dates or times. Only the parts of a format code that specify a date or time are considered.
+- fix: date and time cells that use an East Asian builtin number format (`numFmtId` 27–36 and 50–58, such as `yyyy"年"m"月"d"日"`) are converted like other date cells instead of being emitted as a raw serial number.
+- fix: worksheets that omit the optional row and cell position attributes (`row@r` / `c@r`) are read in document order instead of being reported as an empty sheet.
+- fix: cells belonging to a shared formula now export their stored value instead of a bare `=`.
 
 ## 0.5.0 - 2026-07-29
 

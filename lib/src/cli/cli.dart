@@ -23,7 +23,7 @@ class ExportCommand extends Command<int> {
     ExcelParser? parser,
     Map<String, LocalizationExporter>? exporters,
   }) : logger = logger ?? SimpleLogger(),
-      parser = parser ?? const ExcelParser(),
+       parser = parser ?? const ExcelParser(),
        _exporters = exporters ?? {'arb': ArbExporter()} {
     final allowedFormats = _exporters.keys.toList();
 

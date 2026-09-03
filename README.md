@@ -85,7 +85,7 @@
 - Exports to ARB format (keys are sorted alphabetically)
 - Available as both a CLI and a library
 
-XLSX reading is intentionally limited to cell values needed by localization sheets. Formulas are returned as formula text rather than calculated; macros, images, charts, and merged-cell expansion are not processed.
+XLSX reading is intentionally limited to cell values needed by localization sheets. Formulas are returned as formula text rather than calculated (cells belonging to a shared formula return their stored value); number formats are only used to tell dates and times apart from plain numbers, so grouping, currency symbols, and conditional formatting are not reproduced. Macros, images, charts, and merged-cell expansion are not processed.
 
 ## Usage
 

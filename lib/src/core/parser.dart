@@ -299,7 +299,8 @@ class ExcelParser {
 
   /// Return the list of sheet names present in the workbook represented
   /// by the provided XLSX bytes.
-  List<String> getSheetNames(Uint8List bytes) {
-    return _reader.read(bytes).availableSheets;
-  }
+  ///
+  /// シートが1つも無いワークブックは空のリストを返します（例外にしません）。
+  /// ワークシートの中身は読まないため、[parseWorkbook] より軽い処理です。
+  List<String> getSheetNames(Uint8List bytes) => _reader.readSheetNames(bytes);
 }

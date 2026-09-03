@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/parser.dart';
 import 'package:test/test.dart';
@@ -142,6 +144,45 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+
+  /// シートが1つも無いワークブックでも SheetNotFoundException になることを検証
+  /// （FR-05）
+  ///
+  /// 内部の XlsxSheetNotFoundException が漏れると、公開していない型のため
+  /// 利用者が捕捉できない。
+  test('parse throws when workbook has no sheets', () {
+    // Arrange
+    final bytes = _workbookWithoutSheets();
+    const parser = ExcelParser();
+
+    // Act & Assert
+    expect(
+      () => parser.parse(bytes),
+      throwsA(
+        isA<SheetNotFoundException>()
+            .having((e) => e.requestedSheet, 'requestedSheet', '(first sheet)')
+            .having((e) => e.availableSheets, 'availableSheets', isEmpty),
+      ),
+    );
+  });
+
+  /// シートが1つも無いワークブックのシート名一覧は空リストになることを検証
+  ///
+  /// 一覧の取得は「無いことを知る」ための操作なので、例外にしない。
+  test(
+    'getSheetNames returns an empty list when the workbook has no sheets',
+    () {
+      // Arrange
+      final bytes = _workbookWithoutSheets();
+      const parser = ExcelParser();
+
+      // Act
+      final names = parser.getSheetNames(bytes);
+
+      // Assert
+      expect(names, isEmpty);
+    },
+  );
 
   /// localesを明示指定した場合、指定した列だけがロケールとして扱われ、
   /// ロケールタグらしい他の列（memo等）が無視されることを検証
@@ -730,4 +771,34 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+}
+
+/// シートを1つも持たない最小の XLSX を組み立てます。
+///
+/// `excel` パッケージではシート0件のワークブックを作れないため、
+/// 必要な部品だけを直接組み立てます。
+Uint8List _workbookWithoutSheets() {
+  const spreadsheetNamespace =
+      'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const packageRelationshipsNamespace =
+      'http://schemas.openxmlformats.org/package/2006/relationships';
+  final archive = Archive()
+    ..addFile(
+      _xmlFile(
+        'xl/workbook.xml',
+        '<workbook xmlns="$spreadsheetNamespace"><sheets/></workbook>',
+      ),
+    )
+    ..addFile(
+      _xmlFile(
+        'xl/_rels/workbook.xml.rels',
+        '<Relationships xmlns="$packageRelationshipsNamespace"/>',
+      ),
+    );
+  return Uint8List.fromList(ZipEncoder().encode(archive)!);
+}
+
+ArchiveFile _xmlFile(String path, String contents) {
+  final bytes = utf8.encode(contents);
+  return ArchiveFile(path, bytes.length, bytes);
 }
