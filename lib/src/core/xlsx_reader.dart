@@ -28,12 +28,15 @@ class XlsxReader {
   /// Creates an XLSX reader.
   const XlsxReader();
 
-  /// Office Open XML の関係（relationship）名前空間。
+  /// 名前空間を問わずローカル名で照合するための指定。
   ///
-  /// `r:id` のように接頭辞で参照されるが、接頭辞の綴りはファイルが自由に
-  /// 決められる。属性は名前空間 URI で引く。
-  static const _relationshipsNamespace =
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  /// SpreadsheetML は既定名前空間でも接頭辞付き（`<x:sheet>` / `r:id`）でも
+  /// 書ける。`package:xml` の `findAllElements('sheet')` は**修飾名**で照合
+  /// するため、接頭辞付きのファイルが1件もヒットしない。名前空間 URI を
+  /// 指定する形にすると、今度は `xmlns` を書かない最小ファイル
+  /// （`namespaceUri` が null）を落とす。どちらも読めるようにローカル名で
+  /// 照合する。
+  static const _anyNamespace = '*';
 
   /// SpreadsheetML の上限。これを超える参照は壊れたファイルとみなす。
   ///
@@ -66,8 +69,8 @@ class XlsxReader {
     final sharedStrings = _readSharedStrings(archive);
     final cellFormats = _readCellFormats(archive);
     final uses1904DateSystem = workbook
-        .findAllElements('workbookPr')
-        .any((element) => element.getAttribute('date1904') == '1');
+        .findAllElements('workbookPr', namespace: _anyNamespace)
+        .any((element) => _isTrue(element.getAttribute('date1904')));
     final worksheet = _readXml(archive, selected.path);
 
     return XlsxSheetData(
@@ -103,7 +106,10 @@ class XlsxReader {
     final relationships = _readXml(archive, 'xl/_rels/workbook.xml.rels');
 
     final targetsById = <String, String>{};
-    for (final relationship in relationships.findAllElements('Relationship')) {
+    for (final relationship in relationships.findAllElements(
+      'Relationship',
+      namespace: _anyNamespace,
+    )) {
       final id = relationship.getAttribute('Id');
       final target = relationship.getAttribute('Target');
       if (id != null && target != null) {
@@ -112,11 +118,14 @@ class XlsxReader {
     }
 
     final sheets = <({String name, String path})>[];
-    for (final sheet in workbook.findAllElements('sheet')) {
+    for (final sheet in workbook.findAllElements(
+      'sheet',
+      namespace: _anyNamespace,
+    )) {
       final name = sheet.getAttribute('name');
       final relationshipId = sheet.getAttribute(
         'id',
-        namespace: _relationshipsNamespace,
+        namespace: _anyNamespace,
       );
       final path = targetsById[relationshipId];
       if (name != null && path != null) {
@@ -159,17 +168,24 @@ class XlsxReader {
     if (document == null) return const [];
 
     return document
-        .findAllElements('si')
-        .map(
-          (item) => item
-              .findAllElements('t')
-              // rPh はふりがなであって本文ではない。
-              .where((text) => text.parentElement?.localName != 'rPh')
-              .map((text) => text.innerText)
-              .join(),
-        )
+        .findAllElements('si', namespace: _anyNamespace)
+        .map(_richText)
         .toList(growable: false);
   }
+
+  /// `CT_Rst`（`<si>` と `<is>`）から本文を取り出します。
+  ///
+  /// 装飾で分割された `<r>` は連結し、ふりがな（`<rPh>`）は本文ではないので
+  /// 除く。共有文字列とインライン文字列は同じ型なので、経路によって値が
+  /// 変わらないよう同じ処理を通す。
+  String _richText(XmlElement text) => text
+      .findAllElements('t', namespace: _anyNamespace)
+      .where((item) => item.parentElement?.localName != 'rPh')
+      .map((item) => item.innerText)
+      .join();
+
+  /// `xsd:boolean` の字句表現を判定します（`1` と `true` のどちらも真）。
+  bool _isTrue(String? value) => value == '1' || value?.toLowerCase() == 'true';
 
   List<_CellFormat> _readCellFormats(Archive archive) {
     final document = _readXmlOrNull(archive, 'xl/styles.xml');
@@ -178,19 +194,24 @@ class XlsxReader {
     // `numFmt` は条件付き書式（`dxfs`）の中にも現れる。ID の意味が別物なので
     // 文書全体を走査すると、セル書式の定義を無関係な書式で上書きしてしまう。
     final customFormats = <int, String>{};
-    final numberFormats = document.findAllElements('numFmts').firstOrNull;
+    final numberFormats = document
+        .findAllElements('numFmts', namespace: _anyNamespace)
+        .firstOrNull;
     final numberFormatElements =
-        numberFormats?.findElements('numFmt') ?? const <XmlElement>[];
+        numberFormats?.findElements('numFmt', namespace: _anyNamespace) ??
+        const <XmlElement>[];
     for (final format in numberFormatElements) {
       final id = int.tryParse(format.getAttribute('numFmtId') ?? '');
       final code = format.getAttribute('formatCode');
       if (id != null && code != null) customFormats[id] = code;
     }
 
-    final cellFormats = document.findAllElements('cellXfs').firstOrNull;
+    final cellFormats = document
+        .findAllElements('cellXfs', namespace: _anyNamespace)
+        .firstOrNull;
     if (cellFormats == null) return const [];
     return cellFormats
-        .findElements('xf')
+        .findElements('xf', namespace: _anyNamespace)
         .map((format) {
           final id = int.tryParse(format.getAttribute('numFmtId') ?? '') ?? 0;
           return _classifyFormat(id, customFormats[id]);
@@ -212,9 +233,12 @@ class XlsxReader {
 
   /// 組み込みの時刻書式 ID。32〜35 / 55 / 56 は東アジア向け（`h"時"mm"分"`）。
   static const _builtinTimeFormatIds = {
-    18, 19, 20, 21, 45, 46, 47, //
+    18, 19, 20, 21, 45, 47, //
     32, 33, 34, 35, 55, 56,
   };
+
+  /// 組み込みの経過時間書式 ID。46 は `[h]:mm:ss`。
+  static const _builtinElapsedFormatIds = {46};
 
   /// 角括弧セクションのうち、経過時間（`[h]` / `[mm]` / `[ss]`）以外を除く。
   ///
@@ -225,11 +249,16 @@ class XlsxReader {
     caseSensitive: false,
   );
 
+  /// 経過時間の角括弧指定（`[h]` / `[mm]` / `[ss]`）。
+  static final _elapsedBracket = RegExp(r'\[[hms]+\]', caseSensitive: false);
+
   _CellFormat _classifyFormat(int id, String? customCode) {
+    if (_builtinElapsedFormatIds.contains(id)) return _CellFormat.elapsed;
     if (_builtinTimeFormatIds.contains(id)) return _CellFormat.time;
     if (_builtinDateFormatIds.contains(id)) return _CellFormat.dateTime;
     if (customCode == null) return _CellFormat.other;
 
+    final isElapsed = _elapsedBracket.hasMatch(customCode);
     final code = customCode
         // エスケープを先に外す。`\"` を残すと文字列リテラルの判定がずれる。
         .replaceAll(RegExp(r'\\.'), '')
@@ -243,6 +272,7 @@ class XlsxReader {
         code.contains('y') ||
         (!hasTime && code.contains('m'));
     if (hasDate) return _CellFormat.dateTime;
+    if (isElapsed) return _CellFormat.elapsed;
     if (hasTime) return _CellFormat.time;
     return _CellFormat.other;
   }
@@ -253,22 +283,29 @@ class XlsxReader {
     List<_CellFormat> cellFormats,
     bool uses1904DateSystem,
   ) {
-    final rows = <List<String?>>[];
+    // 行は疎に持つ。`<row r="1048576"/>` のように上限ぎりぎりの空行があると、
+    // 行番号のぶんだけリストを確保するだけでメモリと時間を使う。長さは
+    // 「実際にセルを持つ最終行」で決める。
+    final rows = <int, List<String?>>{};
+    var lastRowWithCells = 0;
     // `row@r` / `c@r` は省略可能で、省略時は出現順に並んでいるとみなす。
     // 属性が無い行を捨てると、仕様上有効なファイルが空シートとして読まれる。
     var previousRowNumber = 0;
-    for (final rowElement in worksheet.findAllElements('row')) {
+    for (final rowElement in worksheet.findAllElements(
+      'row',
+      namespace: _anyNamespace,
+    )) {
       final declaredRow = int.tryParse(rowElement.getAttribute('r') ?? '');
       final rowNumber = declaredRow ?? previousRowNumber + 1;
       if (rowNumber < 1 || rowNumber > _maxRows) continue;
       previousRowNumber = rowNumber;
 
-      while (rows.length < rowNumber) {
-        rows.add(<String?>[]);
-      }
-      final row = rows[rowNumber - 1];
+      final row = rows[rowNumber] ?? <String?>[];
       var previousColumn = -1;
-      for (final cell in rowElement.findElements('c')) {
+      for (final cell in rowElement.findElements(
+        'c',
+        namespace: _anyNamespace,
+      )) {
         final declaredColumn = _columnIndex(cell.getAttribute('r'));
         final column = declaredColumn ?? previousColumn + 1;
         if (column < 0 || column >= _maxColumns) continue;
@@ -283,9 +320,15 @@ class XlsxReader {
           cellFormats,
           uses1904DateSystem,
         );
+        rows[rowNumber] = row;
+        if (rowNumber > lastRowWithCells) lastRowWithCells = rowNumber;
       }
     }
-    return rows;
+    return List<List<String?>>.generate(
+      lastRowWithCells,
+      (index) => rows[index + 1] ?? const <String?>[],
+      growable: false,
+    );
   }
 
   String? _readCell(
@@ -296,26 +339,34 @@ class XlsxReader {
   ) {
     final type = cell.getAttribute('t');
     if (type == 'inlineStr') {
-      return cell.findAllElements('t').map((text) => text.innerText).join();
+      return _richText(cell);
     }
 
     // 数式セルは計算せず式そのものを返す（ADR-13 の表記を維持）。ただし共有
     // 数式の従属セル（`<f t="shared" si="0"/>`）は式本体を持たないため、
     // ここで打ち切るとキャッシュ値まで失われる。
-    final formula = cell.findElements('f').firstOrNull?.innerText;
+    final formula = cell
+        .findElements('f', namespace: _anyNamespace)
+        .firstOrNull
+        ?.innerText;
     if (formula != null && formula.isNotEmpty) {
       return formula.startsWith('=') ? formula : '=$formula';
     }
 
-    final rawValue = cell.findElements('v').firstOrNull?.innerText;
+    final rawValue = cell
+        .findElements('v', namespace: _anyNamespace)
+        .firstOrNull
+        ?.innerText;
     if (rawValue == null) return null;
     final styleIndex = int.tryParse(cell.getAttribute('s') ?? '');
-    final format = styleIndex != null && styleIndex < cellFormats.length
-        ? cellFormats[styleIndex]
-        : _CellFormat.other;
+    final hasFormat =
+        styleIndex != null &&
+        styleIndex >= 0 &&
+        styleIndex < cellFormats.length;
+    final format = hasFormat ? cellFormats[styleIndex] : _CellFormat.other;
     return switch (type) {
       's' => _sharedString(rawValue, sharedStrings),
-      'b' => rawValue == '1' ? 'true' : 'false',
+      'b' => _isTrue(rawValue) ? 'true' : 'false',
       _ => _formatNumericCell(rawValue, format, uses1904DateSystem),
     };
   }
@@ -333,9 +384,13 @@ class XlsxReader {
     final serial = double.tryParse(rawValue);
     if (serial == null) return rawValue;
 
-    if (format == _CellFormat.time) {
+    if (format == _CellFormat.time || format == _CellFormat.elapsed) {
       final seconds = (serial * Duration.secondsPerDay).round();
-      final hour = seconds ~/ Duration.secondsPerHour % 24;
+      // 経過時間（`[h]:mm:ss`）は24時間で折り返さないための指定なので、
+      // 時を丸めない。30時間は `30:00:00`。
+      final hour = format == _CellFormat.elapsed
+          ? seconds ~/ Duration.secondsPerHour
+          : seconds ~/ Duration.secondsPerHour % 24;
       final minute = seconds ~/ Duration.secondsPerMinute % 60;
       final second = seconds % 60;
       return '${_twoDigits(hour)}:${_twoDigits(minute)}:${_twoDigits(second)}';
@@ -400,5 +455,6 @@ class XlsxSheetNotFoundException implements Exception {
 
 /// セル値の解釈に必要な表示形式の分類。
 ///
-/// 日付と日付時刻は出力が同一（ADR-13）なので区別しない。
-enum _CellFormat { other, dateTime, time }
+/// 日付と日付時刻は出力が同一（ADR-13）なので区別しない。時刻と経過時間は、
+/// 24時間で折り返すかどうかが違う。
+enum _CellFormat { other, dateTime, time, elapsed }

@@ -202,6 +202,100 @@ void main() {
     expect(sheet.rows[0], ['true', 'false']);
   });
 
+  /// 真偽値が `true` と綴られていても真として読むことを検証
+  ///
+  /// `1` 以外を偽とすると、失敗せずに**逆の値**を出すため下流で気付けない。
+  test('read accepts a boolean cell written as true', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1">',
+        '<c r="A1" t="b"><v>true</v></c>',
+        '<c r="B1" t="b"><v>false</v></c>',
+        '</row>',
+      ]),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0], ['true', 'false']);
+  });
+
+  /// インライン文字列でもふりがな（rPh）を本文に混ぜないことを検証
+  ///
+  /// `<is>` と `<si>` は同じ CT_Rst 型なので、経路によって値が変わってはいけない。
+  test('read skips phonetic hints in inline strings', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1"><c r="A1" t="inlineStr"><is><t>東京</t>',
+        '<rPh sb="0" eb="2"><t>トウキョウ</t></rPh></is></c></row>',
+      ]),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0][0], '東京');
+  });
+
+  /// 範囲外の書式索引を無視することを検証
+  ///
+  /// 下限を見ないと `RangeError`（`Error`）が漏れ、CLI の `on Exception` を
+  /// 素通りして終了コードが入力エラー（65）ではなく 70 になる。
+  test('read ignores an out-of-range style index', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1">',
+        '<c r="A1" s="-1"><v>5</v></c>',
+        '<c r="B1" s="9"><v>6</v></c>',
+        '</row>',
+      ]),
+      styles: _styles(cellFormatIds: [14]),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0], ['5', '6']);
+  });
+
+  /// 経過時間の書式が24時間で折り返さないことを検証
+  ///
+  /// `[h]` は「24時間で折り返さない」ための指定なので、30時間は `30:00:00`。
+  test('read does not wrap elapsed time at 24 hours', () {
+    // Arrange: 1.25 日 = 30 時間
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1">',
+        '<c r="A1" s="0"><v>1.25</v></c>',
+        '<c r="B1" s="1"><v>1.25</v></c>',
+        '<c r="C1" s="2"><v>1.25</v></c>',
+        '</row>',
+      ]),
+      styles: _styles(
+        numberFormats: {164: '[h]:mm:ss'},
+        // 46 は組み込みの `[h]:mm:ss`、21 は折り返す `h:mm:ss`
+        cellFormatIds: [164, 46, 21],
+      ),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0], ['30:00:00', '30:00:00', '06:00:00']);
+  });
+
   /// 色や通貨の角括弧指定を日付・時刻と誤認しないことを検証
   ///
   /// `[Red]` の `d`、`[$USD]` の `s` を書式指定と読むと、数値が日付や時刻に
@@ -344,6 +438,64 @@ void main() {
 
     // Assert
     expect(sheet.rows[0][0], '1904-01-01T00:00:00.000Z');
+  });
+
+  /// `date1904` が `true` と綴られていても 1904 年方式と認識することを検証
+  ///
+  /// `xsd:boolean` は語形も正当。取りこぼすとシート内の全日付が 1462 日ずれる。
+  test('read accepts date1904 written as true', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet(['<row r="1"><c r="A1" s="0"><v>0</v></c></row>']),
+      styles: _styles(cellFormatIds: [14]),
+      workbookProperties: '<workbookPr date1904="true"/>',
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0][0], '1904-01-01T00:00:00.000Z');
+  });
+
+  /// 名前空間の接頭辞で書かれた SpreadsheetML を読めることを検証
+  ///
+  /// `package:xml` の `findAllElements` は修飾名で照合するため、要素名を
+  /// そのまま渡すと `<x:sheet>` 形式のファイルが1件もヒットしない。
+  test('read parses SpreadsheetML written with namespace prefixes', () {
+    // Arrange
+    final bytes = _prefixedWorkbook();
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.sheetName, 'Sheet1');
+    expect(sheet.rows[0], ['key', 'en']);
+  });
+
+  /// 上限ちょうどの空行があっても、その行数ぶんの領域を確保しないことを検証
+  ///
+  /// 行の長さは「実際にセルを持つ最終行」で決める。空行で伸ばすと、小さな
+  /// ファイルで 100 万行を走査することになる。
+  test('read does not materialise trailing rows without cells', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1"><c r="A1" t="inlineStr"><is><t>ok</t></is></c></row>',
+        '<row r="1048576"/>',
+      ]),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows.length, 1);
+    expect(sheet.rows[0][0], 'ok');
   });
 
   /// 関係名前空間の接頭辞が `r` 以外でもシートを解決できることを検証
@@ -615,6 +767,60 @@ Uint8List _workbook({
       ),
     );
   }
+  return Uint8List.fromList(ZipEncoder().encode(archive)!);
+}
+
+/// すべての部品を名前空間の接頭辞付きで書いた XLSX を組み立てます。
+///
+/// 既定名前空間ではなく `<x:sheet>` 形式で書かれたファイルを模します。
+Uint8List _prefixedWorkbook() {
+  final archive = Archive()
+    ..addFile(
+      _xmlFile(
+        'xl/workbook.xml',
+        [
+          '<x:workbook xmlns:x="$_spreadsheetNamespace"',
+          ' xmlns:rel="$_officeRelationshipsNamespace">',
+          '<x:sheets>',
+          '<x:sheet name="Sheet1" sheetId="1" rel:id="rId1"/>',
+          '</x:sheets></x:workbook>',
+        ].join(),
+      ),
+    )
+    ..addFile(
+      _xmlFile(
+        'xl/_rels/workbook.xml.rels',
+        [
+          '<pkg:Relationships xmlns:pkg="$_packageRelationshipsNamespace">',
+          '<pkg:Relationship Id="rId1" Target="worksheets/sheet1.xml"',
+          ' Type="$_officeRelationshipsNamespace/worksheet"/>',
+          '</pkg:Relationships>',
+        ].join(),
+      ),
+    )
+    ..addFile(
+      _xmlFile(
+        'xl/worksheets/sheet1.xml',
+        [
+          '<x:worksheet xmlns:x="$_spreadsheetNamespace"><x:sheetData>',
+          '<x:row r="1">',
+          '<x:c r="A1" t="s"><x:v>0</x:v></x:c>',
+          '<x:c r="B1" t="inlineStr"><x:is><x:t>en</x:t></x:is></x:c>',
+          '</x:row>',
+          '</x:sheetData></x:worksheet>',
+        ].join(),
+      ),
+    )
+    ..addFile(
+      _xmlFile(
+        'xl/sharedStrings.xml',
+        [
+          '<x:sst xmlns:x="$_spreadsheetNamespace">',
+          '<x:si><x:t>key</x:t></x:si>',
+          '</x:sst>',
+        ].join(),
+      ),
+    );
   return Uint8List.fromList(ZipEncoder().encode(archive)!);
 }
 
