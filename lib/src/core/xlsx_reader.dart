@@ -286,11 +286,11 @@ class XlsxReader {
     List<_CellFormat> cellFormats,
     bool uses1904DateSystem,
   ) {
-    // 行は疎に持つ。`<row r="1048576"/>` のように上限ぎりぎりの空行があると、
+    // 行は疎に持つ。`<row r="1048576"/>` のように上限ぎりぎりの行があると、
     // 行番号のぶんだけリストを確保するだけでメモリと時間を使う。長さは
-    // 「実際にセルを持つ最終行」で決める。
+    // 「値を持つセルがある最終行」で決める（ADR-22 / FR-08）。
     final rows = <int, List<String?>>{};
-    var lastRowWithCells = 0;
+    var lastRowWithValue = 0;
     // `row@r` / `c@r` は省略可能で、省略時は出現順に並んでいるとみなす。
     // 属性が無い行を捨てると、仕様上有効なファイルが空シートとして読まれる。
     var previousRowNumber = 0;
@@ -323,17 +323,19 @@ class XlsxReader {
           cellFormats,
           uses1904DateSystem,
         );
+        // 空セルは行の中では `null` として残す（FR-22 / FR-24）。列の対応が
+        // ずれないよう、位置の記録（`previousColumn`）と代入は先に済ませる。
         row[column] = value;
-        // 値を持つセルだけが行数を伸ばす。Excel はデータより下の行に書式だけを
-        // 付けたとき、値の無い `<c>` を持つ行を書き出す。それで長さを決めると、
+        // ただし行数は伸ばさない。Excel はデータより下の行に書式だけを付けた
+        // とき、値の無い `<c>` を持つ行を書き出す。それで長さを決めると、
         // 小さなファイルが 100 万行のシートになる。
         if (value == null) continue;
         rows[rowNumber] = row;
-        if (rowNumber > lastRowWithCells) lastRowWithCells = rowNumber;
+        if (rowNumber > lastRowWithValue) lastRowWithValue = rowNumber;
       }
     }
     return List<List<String?>>.generate(
-      lastRowWithCells,
+      lastRowWithValue,
       (index) => rows[index + 1] ?? const <String?>[],
       growable: false,
     );

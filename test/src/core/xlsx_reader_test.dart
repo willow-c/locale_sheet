@@ -528,6 +528,32 @@ void main() {
     expect(sheet.rows[0][0], 'ok');
   });
 
+  /// 行の中の空セルは `null` として残り、後続の列をずらさないことを検証
+  ///
+  /// 行数を「値を持つセルがある最終行」で決めるのは行の長さの話であって、
+  /// 行の中の位置には影響しない。空セルを読み飛ばすと列の対応がずれる。
+  test('read keeps empty cells as null without shifting later columns', () {
+    // Arrange: 位置参照の無い空セルと、値のある末尾の空セル
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row><c/><c t="inlineStr"><is><t>second</t></is></c></row>',
+        '<row r="2">',
+        '<c r="A2" t="inlineStr"><is><t>hello</t></is></c>',
+        '<c r="B2"/>',
+        '<c r="C2" t="inlineStr"><is><t>third</t></is></c>',
+        '</row>',
+      ]),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0], [null, 'second']);
+    expect(sheet.rows[1], ['hello', null, 'third']);
+  });
+
   /// 関係名前空間の接頭辞が `r` 以外でもシートを解決できることを検証
   ///
   /// 接頭辞の綴りはファイルが自由に決められるため、`r:id` の決め打ちは
