@@ -258,7 +258,9 @@ class XlsxReader {
     if (_builtinDateFormatIds.contains(id)) return _CellFormat.dateTime;
     if (customCode == null) return _CellFormat.other;
 
-    final isElapsed = _elapsedBracket.hasMatch(customCode);
+    // 判定はすべて「引用符・エスケープ・角括弧セクションを剥がした後」の
+    // 文字列に対して行う。生のコードを見ると、`#,##0" [h] "` のように
+    // リテラルへ書いた `[h]` を書式指定として拾ってしまう。
     final code = customCode
         // エスケープを先に外す。`\"` を残すと文字列リテラルの判定がずれる。
         .replaceAll(RegExp(r'\\.'), '')
@@ -272,7 +274,8 @@ class XlsxReader {
         code.contains('y') ||
         (!hasTime && code.contains('m'));
     if (hasDate) return _CellFormat.dateTime;
-    if (isElapsed) return _CellFormat.elapsed;
+    // `_nonElapsedBracket` は経過時間の角括弧を残すので、剥がした後でも拾える。
+    if (_elapsedBracket.hasMatch(code)) return _CellFormat.elapsed;
     if (hasTime) return _CellFormat.time;
     return _CellFormat.other;
   }
@@ -314,12 +317,17 @@ class XlsxReader {
         while (row.length <= column) {
           row.add(null);
         }
-        row[column] = _readCell(
+        final value = _readCell(
           cell,
           sharedStrings,
           cellFormats,
           uses1904DateSystem,
         );
+        row[column] = value;
+        // 値を持つセルだけが行数を伸ばす。Excel はデータより下の行に書式だけを
+        // 付けたとき、値の無い `<c>` を持つ行を書き出す。それで長さを決めると、
+        // 小さなファイルが 100 万行のシートになる。
+        if (value == null) continue;
         rows[rowNumber] = row;
         if (rowNumber > lastRowWithCells) lastRowWithCells = rowNumber;
       }

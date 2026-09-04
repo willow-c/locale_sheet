@@ -296,6 +296,34 @@ void main() {
     expect(sheet.rows[0], ['30:00:00', '30:00:00', '06:00:00']);
   });
 
+  /// リテラルの中に書いた `[h]` を経過時間の指定と誤認しないことを検証
+  ///
+  /// 判定は引用符・エスケープ・角括弧を剥がした後の文字列に対して行う。
+  /// 生の書式コードを見ると、数値が経過時間として出力される。
+  test('read ignores elapsed markers written inside a quoted literal', () {
+    // Arrange
+    final bytes = _workbook(
+      sheet: _sheet([
+        '<row r="1">',
+        '<c r="A1" s="0"><v>1234.5</v></c>',
+        '<c r="B1" s="1"><v>0.5</v></c>',
+        '</row>',
+      ]),
+      styles: _styles(
+        // 164 の `[h]` は表示する文字列、165 は経過時間の指定
+        numberFormats: {164: '#,##0" [h] "', 165: '[mm]:ss'},
+        cellFormatIds: [164, 165],
+      ),
+    );
+    const reader = XlsxReader();
+
+    // Act
+    final sheet = reader.read(bytes);
+
+    // Assert
+    expect(sheet.rows[0], ['1234.5', '12:00:00']);
+  });
+
   /// 色や通貨の角括弧指定を日付・時刻と誤認しないことを検証
   ///
   /// `[Red]` の `d`、`[$USD]` の `s` を書式指定と読むと、数値が日付や時刻に
@@ -480,12 +508,14 @@ void main() {
   ///
   /// 行の長さは「実際にセルを持つ最終行」で決める。空行で伸ばすと、小さな
   /// ファイルで 100 万行を走査することになる。
-  test('read does not materialise trailing rows without cells', () {
-    // Arrange
+  test('read sizes the sheet by the last row that has a value', () {
+    // Arrange: セルの無い行と、値の無い `<c>` だけを持つ行の両方を末尾に置く。
+    // 後者は Excel がデータより下の行に書式だけ付けたときに書き出す形。
     final bytes = _workbook(
       sheet: _sheet([
         '<row r="1"><c r="A1" t="inlineStr"><is><t>ok</t></is></c></row>',
-        '<row r="1048576"/>',
+        '<row r="1048575"/>',
+        '<row r="1048576"><c r="A1048576"/></row>',
       ]),
     );
     const reader = XlsxReader();
