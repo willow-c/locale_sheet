@@ -1,6 +1,6 @@
 # CHANGE LOG
 
-## vx.x.x 20xx-xx-xx
+## 0.6.0 - 2026-09-07
 
 - change: `ExcelParser` now uses a focused built-in XLSX reader instead of the `excel` package at runtime. The optional `decoder` constructor argument has been removed; code that injected an `Excel` decoder must pass XLSX bytes through the normal parser path or provide an `ExcelParser` implementation at the caller boundary.
 - change: runtime dependencies changed. `archive: ^3.6.1` and `xml: ^6.6.1` are now runtime dependencies, and `excel` is used only to build test fixtures. Applications that already depend on `archive: ^4.0.0` or `xml: ^7.0.0` cannot resolve this version; the constraints stay narrow until the reader can be verified against those major versions.
