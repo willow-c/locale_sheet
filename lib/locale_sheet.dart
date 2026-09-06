@@ -35,7 +35,7 @@ Future<void> convertExcelBytesToArb(
   String? descriptionHeader,
   List<String>? locales,
 }) async {
-  final usedParser = parser ?? ExcelParser();
+  final usedParser = parser ?? const ExcelParser();
   final sheet = usedParser.parse(
     bytes,
     sheetName: sheetName,

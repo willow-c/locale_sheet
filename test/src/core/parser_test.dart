@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:excel/excel.dart';
 import 'package:locale_sheet/src/core/parser.dart';
 import 'package:test/test.dart';
@@ -14,7 +16,7 @@ void main() {
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_bad');
     final file = File('${tmp.path}/bad.xlsx')..writeAsBytesSync(bytes!);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act & Assert
@@ -34,7 +36,7 @@ void main() {
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_empty');
     final file = File('${tmp.path}/empty.xlsx')..writeAsBytesSync(bytes!);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act
@@ -68,7 +70,7 @@ void main() {
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_nonlocale');
     final file = File('${tmp.path}/nonlocale.xlsx')..writeAsBytesSync(bytes!);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act
@@ -103,7 +105,7 @@ void main() {
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_sheetname');
     final file = File('${tmp.path}/sheetname.xlsx')..writeAsBytesSync(bytes!);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act
@@ -129,7 +131,7 @@ void main() {
     final bytes = excel.encode();
     final tmp = Directory.systemTemp.createTempSync('parser_missing_sheet');
     final file = File('${tmp.path}/missing.xlsx')..writeAsBytesSync(bytes!);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act & Assert
@@ -143,20 +145,44 @@ void main() {
     }
   });
 
+  /// シートが1つも無いワークブックでも SheetNotFoundException になることを検証
+  /// （FR-05）
+  ///
+  /// 内部の XlsxSheetNotFoundException が漏れると、公開していない型のため
+  /// 利用者が捕捉できない。
   test('parse throws when workbook has no sheets', () {
     // Arrange
-    final parser = ExcelParser(
-      decoder: (_) {
-        throw SheetNotFoundException('(first sheet)', <String>[]);
-      },
-    );
+    final bytes = _workbookWithoutSheets();
+    const parser = ExcelParser();
 
     // Act & Assert
     expect(
-      () => parser.parse(Uint8List.fromList([])),
-      throwsA(isA<SheetNotFoundException>()),
+      () => parser.parse(bytes),
+      throwsA(
+        isA<SheetNotFoundException>()
+            .having((e) => e.requestedSheet, 'requestedSheet', '(first sheet)')
+            .having((e) => e.availableSheets, 'availableSheets', isEmpty),
+      ),
     );
   });
+
+  /// シートが1つも無いワークブックのシート名一覧は空リストになることを検証
+  ///
+  /// 一覧の取得は「無いことを知る」ための操作なので、例外にしない。
+  test(
+    'getSheetNames returns an empty list when the workbook has no sheets',
+    () {
+      // Arrange
+      final bytes = _workbookWithoutSheets();
+      const parser = ExcelParser();
+
+      // Act
+      final names = parser.getSheetNames(bytes);
+
+      // Assert
+      expect(names, isEmpty);
+    },
+  );
 
   /// localesを明示指定した場合、指定した列だけがロケールとして扱われ、
   /// ロケールタグらしい他の列（memo等）が無視されることを検証
@@ -177,10 +203,11 @@ void main() {
         TextCellValue('こんにちは'),
         TextCellValue('a note'),
       ]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final sheet = parser.parse(Uint8List(0), locales: ['en', 'ja']);
+    final sheet = parser.parse(bytes, locales: ['en', 'ja']);
 
     // Assert: memo はロケールから外れ、無視した列として記録される
     expect(sheet.locales, ['en', 'ja']);
@@ -196,10 +223,11 @@ void main() {
     excel['Sheet1']
       ..appendRow([TextCellValue('key'), TextCellValue('zh-Hant-HK')])
       ..appendRow([TextCellValue('hello'), TextCellValue('你好')]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final sheet = parser.parse(Uint8List(0), locales: ['zh_hant_hk']);
+    final sheet = parser.parse(bytes, locales: ['zh_hant_hk']);
 
     // Assert: ロケール名はヘッダの表記がそのまま保持される
     expect(sheet.locales, ['zh-Hant-HK']);
@@ -214,11 +242,12 @@ void main() {
     excel['Sheet1']
       ..appendRow([TextCellValue('key'), TextCellValue('en')])
       ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act & Assert: 綴り間違いを黙って落とさない
     expect(
-      () => parser.parse(Uint8List(0), locales: ['en', 'fr']),
+      () => parser.parse(bytes, locales: ['en', 'fr']),
       throwsA(
         isA<FormatException>().having(
           (e) => e.message,
@@ -248,10 +277,11 @@ void main() {
         TextCellValue('desc'),
         TextCellValue('note'),
       ]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final sheet = parser.parse(Uint8List(0));
+    final sheet = parser.parse(bytes);
 
     // Assert
     expect(sheet.locales, ['en']);
@@ -267,10 +297,11 @@ void main() {
       ..appendRow([TextCellValue('key'), TextCellValue('en')])
       ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
     excel['Extra'].appendRow([TextCellValue('key')]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final parsed = parser.parseWorkbook(Uint8List(0));
+    final parsed = parser.parseWorkbook(bytes);
 
     // Assert: 呼び出し側が「どれが最初のシートか」を推測し直す必要がない
     expect(parsed.sheetName, 'Sheet1');
@@ -286,10 +317,11 @@ void main() {
     excel['Target']
       ..appendRow([TextCellValue('key'), TextCellValue('en')])
       ..appendRow([TextCellValue('hello'), TextCellValue('Hello')]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final parsed = parser.parseWorkbook(Uint8List(0), sheetName: 'Target');
+    final parsed = parser.parseWorkbook(bytes, sheetName: 'Target');
 
     // Assert
     expect(parsed.sheetName, 'Target');
@@ -331,10 +363,11 @@ void main() {
         ..updateCell(CellIndex.indexByString('B$row'), entry.value);
       row++;
     }
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final parsed = parser.parse(Uint8List(0));
+    final parsed = parser.parse(bytes);
     final byKey = {
       for (final e in parsed.entries) e.key: e.translations['en'],
     };
@@ -366,11 +399,12 @@ void main() {
         TextCellValue('你好'),
         TextCellValue('您好'),
       ]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act & Assert: 衝突した両方のヘッダ名がメッセージに含まれる
     expect(
-      () => parser.parse(Uint8List(0)),
+      () => parser.parse(bytes),
       throwsA(
         isA<FormatException>()
             .having((e) => e.message, 'message', contains('zh-TW'))
@@ -395,11 +429,12 @@ void main() {
         TextCellValue('Hello'),
         TextCellValue('HELLO'),
       ]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act & Assert
     expect(
-      () => parser.parse(Uint8List(0)),
+      () => parser.parse(bytes),
       throwsA(isA<FormatException>()),
     );
   });
@@ -411,22 +446,24 @@ void main() {
     // Arrange: 一度も書き込んでいないシートは行数0になる
     final excel = Excel.createExcel();
     expect(excel.tables[excel.getDefaultSheet()]!.rows, isEmpty);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act
-    final sheet = parser.parse(Uint8List(0));
+    final sheet = parser.parse(bytes);
 
     // Assert: ヘッダ検証に到達せず、空の結果が返る
     expect(sheet.locales, isEmpty);
     expect(sheet.entries, isEmpty);
   });
 
-  test('getSheetNames returns available sheet names via decoder', () {
+  test('getSheetNames returns available sheet names', () {
     final excel = Excel.createExcel();
     excel['Alpha'].appendRow([TextCellValue('key')]);
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
-    final names = parser.getSheetNames(Uint8List.fromList([]));
+    final names = parser.getSheetNames(bytes);
     expect(names, contains('Alpha'));
   });
 
@@ -434,12 +471,13 @@ void main() {
     // Arrange
     final excel = Excel.createExcel();
     final _ = excel['A'];
-    final parser = ExcelParser(decoder: (_) => excel);
+    final bytes = Uint8List.fromList(excel.encode()!);
+    const parser = ExcelParser();
 
     // Act & Assert
     try {
       // Act: attempt to parse a non-existent sheet
-      parser.parse(Uint8List(0), sheetName: 'NoSuchSheet');
+      parser.parse(bytes, sheetName: 'NoSuchSheet');
       fail('Expected SheetNotFoundException');
     } on SheetNotFoundException catch (e) {
       // Assert: message contains requested and available sheet names
@@ -464,7 +502,7 @@ void main() {
     final bytes = excel.encode()!;
     final tmp = Directory.systemTemp.createTempSync('parser_empty_header_col');
     final file = File('${tmp.path}/ehc.xlsx')..writeAsBytesSync(bytes);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       final sheet = parser.parse(file.readAsBytesSync());
@@ -488,7 +526,7 @@ void main() {
     final bytes = excel.encode()!;
     final tmp = Directory.systemTemp.createTempSync('parser_row_skip');
     final file = File('${tmp.path}/rows.xlsx')..writeAsBytesSync(bytes);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       final sheet = parser.parse(file.readAsBytesSync());
@@ -519,7 +557,7 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('parser_desc');
     final file = File('${tmp.path}/desc.xlsx')..writeAsBytesSync(bytes);
 
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act
@@ -560,7 +598,7 @@ void main() {
     final bytes = excel.encode()!;
     final tmp = Directory.systemTemp.createTempSync('parser_desc_case');
     final file = File('${tmp.path}/desc_case.xlsx')..writeAsBytesSync(bytes);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act: pass descriptionHeader with different casing
@@ -593,7 +631,7 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('parser_desc_missing');
     final file = File('${tmp.path}/desc_missing.xlsx')..writeAsBytesSync(bytes);
 
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act & Assert
@@ -622,7 +660,7 @@ void main() {
     final bytes = excel.encode()!;
     final tmp = Directory.systemTemp.createTempSync('parser_desc_key');
     final file = File('${tmp.path}/desc_key.xlsx')..writeAsBytesSync(bytes);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act & Assert:
@@ -664,7 +702,7 @@ void main() {
     final tmp = Directory.systemTemp.createTempSync('parser_desc_conflict');
     final file = File('${tmp.path}/desc_conflict.xlsx')
       ..writeAsBytesSync(bytes);
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       expect(
@@ -712,7 +750,7 @@ void main() {
     final path = '${tmp.path}/desc_empty.xlsx';
     File(path).writeAsBytesSync(bytes);
 
-    final parser = ExcelParser();
+    const parser = ExcelParser();
 
     try {
       // Act
@@ -733,4 +771,34 @@ void main() {
       tmp.deleteSync(recursive: true);
     }
   });
+}
+
+/// シートを1つも持たない最小の XLSX を組み立てます。
+///
+/// `excel` パッケージではシート0件のワークブックを作れないため、
+/// 必要な部品だけを直接組み立てます。
+Uint8List _workbookWithoutSheets() {
+  const spreadsheetNamespace =
+      'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const packageRelationshipsNamespace =
+      'http://schemas.openxmlformats.org/package/2006/relationships';
+  final archive = Archive()
+    ..addFile(
+      _xmlFile(
+        'xl/workbook.xml',
+        '<workbook xmlns="$spreadsheetNamespace"><sheets/></workbook>',
+      ),
+    )
+    ..addFile(
+      _xmlFile(
+        'xl/_rels/workbook.xml.rels',
+        '<Relationships xmlns="$packageRelationshipsNamespace"/>',
+      ),
+    );
+  return Uint8List.fromList(ZipEncoder().encode(archive)!);
+}
+
+ArchiveFile _xmlFile(String path, String contents) {
+  final bytes = utf8.encode(contents);
+  return ArchiveFile(path, bytes.length, bytes);
 }

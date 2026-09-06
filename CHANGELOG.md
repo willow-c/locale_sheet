@@ -1,5 +1,21 @@
 # CHANGE LOG
 
+## vx.x.x 20xx-xx-xx
+
+- change: `ExcelParser` now uses a focused built-in XLSX reader instead of the `excel` package at runtime. The optional `decoder` constructor argument has been removed; code that injected an `Excel` decoder must pass XLSX bytes through the normal parser path or provide an `ExcelParser` implementation at the caller boundary.
+- change: runtime dependencies changed. `archive: ^3.6.1` and `xml: ^6.6.1` are now runtime dependencies, and `excel` is used only to build test fixtures. Applications that already depend on `archive: ^4.0.0` or `xml: ^7.0.0` cannot resolve this version; the constraints stay narrow until the reader can be verified against those major versions.
+- fix: XLSX files containing duplicate entries in `sharedStrings.xml` no longer fail with `Null check operator used on a null value` or shift subsequent cell values. Shared-string positions and duplicates are now preserved exactly while reading.
+- fix: numbers whose format contains a colour, currency, or condition section (for example `[Red]#,##0.00`) are no longer misread as dates or times. Only the parts of a format code that specify a date or time are considered.
+- fix: date and time cells that use an East Asian builtin number format (`numFmtId` 27–36 and 50–58, such as `yyyy"年"m"月"d"日"`) are converted like other date cells instead of being emitted as a raw serial number.
+- fix: worksheets that omit the optional row and cell position attributes (`row@r` / `c@r`) are read in document order instead of being reported as an empty sheet.
+- fix: cells belonging to a shared formula now export their stored value instead of a bare `=`.
+- fix: workbooks written with namespace prefixes (`<x:sheet>`, `<pkg:Relationship>`) are read instead of failing with a sheet-not-found error that lists no sheets.
+- fix: `date1904="true"` is recognised as the 1904 date system, so dates in such workbooks are no longer shifted by 1462 days.
+- fix: boolean cells written as `<v>true</v>` are no longer reported as `false`.
+- fix: inline strings no longer include phonetic hints (`rPh`) in their text, matching how shared strings are read.
+- fix: elapsed-time formats (`[h]:mm:ss` and `numFmtId` 46) no longer wrap at 24 hours; 30 hours is exported as `30:00:00`.
+- fix: an out-of-range style index on a cell no longer escapes as a `RangeError`; such cells are read without a number format.
+
 ## 0.5.0 - 2026-07-29
 
 This release contains breaking changes. The `change:` entries below list them first.
