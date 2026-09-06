@@ -27,8 +27,10 @@ Invoke-LocalCommand $cmd ($argsPrefix + @('test','--coverage=coverage'))
 
 Write-Host "Formatting coverage to lcov..."
 
- $formatArgs = @('pub','global','run','coverage:format_coverage','--packages=.dart_tool/package_config.json','--in=coverage','--out=coverage/lcov.info','--lcov')
-Invoke-LocalCommand $cmd $formatArgs
+$formatArgs = @('pub','global','run','coverage:format_coverage','--packages=.dart_tool/package_config.json','--in=coverage','--out=coverage/lcov.info','--lcov')
+# 他の呼び出しと同じく $argsPrefix を前置する。付け忘れると fvm 利用時に
+# `fvm dart pub ...` ではなく `fvm pub ...` になり、存在しないサブコマンドで失敗する。
+Invoke-LocalCommand $cmd ($argsPrefix + $formatArgs)
 
 
 Write-Host "[locale_sheet] generating HTML report..."
