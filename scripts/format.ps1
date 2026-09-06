@@ -7,10 +7,11 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "locale_sheet: format (PowerShell)"
 
-function Invoke-LocalCommand($cmd, $args) {
-    Write-Host "Running: $cmd $($args -join ' ')"
-    $proc = Start-Process -FilePath $cmd -ArgumentList $args -NoNewWindow -Wait -PassThru
-    if ($proc.ExitCode -ne 0) { throw "Command failed: $cmd $($args -join ' ') (exit $($proc.ExitCode))" }
+# 引数名に $args を使うと PowerShell の自動変数を隠してしまうため避ける。
+function Invoke-LocalCommand($cmd, $commandArgs) {
+    Write-Host "Running: $cmd $($commandArgs -join ' ')"
+    $proc = Start-Process -FilePath $cmd -ArgumentList $commandArgs -NoNewWindow -Wait -PassThru
+    if ($proc.ExitCode -ne 0) { throw "Command failed: $cmd $($commandArgs -join ' ') (exit $($proc.ExitCode))" }
 }
 
 # choose fvm if available
